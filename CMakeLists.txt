@@ -25,6 +25,8 @@ option(WITH_GNSS_SERVICE
        "Build the GNSS Service" ON)
 option(WITH_LOG_REPLAYER
        "Build the Log Replayer" ON)
+option(WITH_LOGGER
+       "Build the Logger" ON)       
 option(WITH_SENSORS_SERVICE
        "Build the Sensors Service" ON)
 option(WITH_FRANCA_INTERFACE
@@ -45,6 +47,10 @@ endif(WITH_GNSS_SERVICE)
 if(WITH_LOG_REPLAYER)
 	add_subdirectory(log-replayer)
 endif(WITH_LOG_REPLAYER)
+
+if(WITH_LOGGER)
+	add_subdirectory(logger)
+endif(WITH_LOGGER)
 
 if(WITH_SENSORS_SERVICE)
 	add_subdirectory(sensors-service)
