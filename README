@@ -121,6 +121,11 @@ To download the DLT-daemon, just execute the following command:
 git clone git://git.projects.genivi.org/dlt-daemon.git
 To install the DLT-daemon, etxract the tarball and follow the 
 instructions in the file install.txt.
+Note: You may have to call 
+  export PKG_CONFIG_PATH=/usr/lib/pkgconfig
+before  
+  sudo ldconfig
+to add DLT to the pkgconfig search path before calling cmake
 
 DWITH_IPHONE=ON requires that the iPhone app 'SensorLogger' is
 installed on a iPhone and that the option to broadcast the
