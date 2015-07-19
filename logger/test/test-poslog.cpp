@@ -69,4 +69,7 @@ int main()
     poslogAddString("This log should not appear");
     closelog();
     poslogDestroy();
+#if (DLT_ENABLED)    
+    DLT_UNREGISTER_APP();
+#endif
 }

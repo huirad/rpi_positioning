@@ -71,4 +71,7 @@ int main()
     gnssDeregisterTimeCallback(&cbTime);        
     gnssDestroy();
     poslogDestroy();
+#if (DLT_ENABLED)    
+    DLT_UNREGISTER_APP();
+#endif    
 }
