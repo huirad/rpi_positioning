@@ -344,11 +344,11 @@ void* loop_GNSS_NMEA_device(void* dev)
                 TGNSSPosition gnss_pos;
                 if (extractTime(gps_data, timestamp, gnss_time))
                 {
-                    updateGNSSTime(&gnss_time);
+                    updateGNSSTime(&gnss_time, 1);
                 }
                 if (extractPosition(gps_data, timestamp, gnss_pos))
                 {
-                    updateGNSSPosition(&gnss_pos);
+                    updateGNSSPosition(&gnss_pos,1 );
                 }
             }
         }

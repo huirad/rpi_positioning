@@ -26,18 +26,66 @@
 extern "C" {
 #endif
 
-int snprintf(char *str, size_t size, const char *format, ...);
-  
-int gnssTime_to_string(const TGNSSTime* time, char *str, size_t size);
-int gnssSatelliteDetail_to_string(const TGNSSSatelliteDetail* satelliteDetails, char *str, size_t size);
-int gnssPosition_to_string(const TGNSSPosition* position, char *str, size_t size);
+/**
+ * Convert a TGNSSPosition structure to a log string.
+ * @note: The log string will *not* contain a line break (\n) at the end.
+ * @param timestamp Timestamp for the current time in ms to be added to the header of the log string.
+ *   This timestamp shall be based on the same time source as the timestamp within the position parameter.
+ * @param countdown Countdown value to be added to the header of the log string.
+ * @param position TGNSSPosition structure to be converted to the log string
+ * @param str Pointer to a string variable where the log string will be written to.
+ * @param size Size of the string variable where the log string will be written to.
+ */
+void gnssPosition_to_string(uint64_t timestamp, uint16_t countdown, const TGNSSPosition* position, char *str, size_t size);
 
-void gnssTime_log(uint64_t timestamp, const TGNSSTime time[], uint16_t numElements);
-void gnssSatelliteDetail_log(uint64_t timestamp, const TGNSSSatelliteDetail satelliteDetail[], uint16_t numElements);
+/**
+ * Convert a TGNSSTime structure to a log string.
+ * @note: The log string will *not* contain a line break (\n) at the end.
+ * @param timestamp Timestamp for the current time in ms to be added to the header of the log string.
+ *   This timestamp shall be based on the same time source as the timestamp within the time parameter.
+ * @param countdown Countdown value to be added to the header of the log string.
+ * @param position TGNSSTime structure to be converted to the log string
+ * @param str Pointer to a string variable where the log string will be written to.
+ * @param size Size of the string variable where the log string will be written to.
+ */
+void gnssTime_to_string(uint64_t timestamp, uint16_t countdown, const TGNSSTime* time, char *str, size_t size);
+
+/**
+ * Convert a TGNSSSatelliteDetail structure to a log string.
+ * @note: The log string will *not* contain a line break (\n) at the end.
+ * @param timestamp Timestamp for the current time in ms to be added to the header of the log string.
+ *   This timestamp shall be based on the same time source as the timestamp within the satellite detail parameter.
+ * @param countdown Countdown value to be added to the header of the log string.
+ * @param position TGNSSSatelliteDetail structure to be converted to the log string
+ * @param str Pointer to a string variable where the log string will be written to.
+ * @param size Size of the string variable where the log string will be written to.
+ */
+void gnssSatelliteDetail_to_string(uint64_t timestamp, uint16_t countdown, const TGNSSSatelliteDetail* satelliteDetails, char *str, size_t size);
+
+
+/**
+ * Write GNSS position data to the position log.
+ * 
+ * @param position pointer to an array of TGNSSPosition with size numElements 
+ * @param numElements number of TGNSSPosition elements in array position
+ */
 void gnssPosition_log(uint64_t timestamp, const TGNSSPosition position[], uint16_t numElements);
 
-CHECK!!! SUPPORTfor buffered data !!!!!!!!!!!!!
-- when/where to add external t
+/**
+ * Write GNSS time data to the position log.
+ * 
+ * @param position pointer to an array of TGNSSTime with size numElements 
+ * @param numElements number of TGNSSTime elements in array position
+ */
+void gnssTime_log(uint64_t timestamp, const TGNSSTime time[], uint16_t numElements);
+
+/**
+ * Write GNSS satelliet detail data to the position log.
+ * 
+ * @param position pointer to an array of TGNSSSatelliteDetail with size numElements 
+ * @param numElements number of TGNSSSatelliteDetail elements in array position
+ */
+void gnssSatelliteDetail_log(uint64_t timestamp, const TGNSSSatelliteDetail satelliteDetail[], uint16_t numElements);
 
 #ifdef __cplusplus
 }

@@ -30,41 +30,43 @@
 
 void test_cb(const char* string)
 {
-  printf("CB %s\n", string);
+    printf("CB %s\n", string);
 }
 
 int main()
 {
-  char log1[] = "LOG 1";
-  char log2[] = "LOG 2";
-  const char* logstrings[] = {log1, log2};
-  char logger_version_string[64];
-  int major;
-  int minor;
-  int micro;
+    char log1[] = "LOG 1";
+    char log2[] = "LOG 2";
+    const char* logstrings[] = {log1, log2};
+    char logger_version_string[64];
+    int major;
+    int minor;
+    int micro;
+    EPoslogReleaseLevel level;
   
-  //prepare the sinks: DLT, syslog, file descriptor, callback
+    //prepare the sinks: DLT, syslog, file descriptor, callback
 #if (DLT_ENABLED)  
-  DLT_REGISTER_APP("PLT","Test Application for Positioning Logging");
+    DLT_REGISTER_APP("PLT","Test Application for Positioning Logging");
 #endif  
-  openlog("POSLOGTEST", LOG_PID, LOG_USER);
-  poslogSetFD(STDOUT_FILENO);
-  poslogSetCB(test_cb);
+    openlog("POSLOGTEST", LOG_PID, LOG_USER);
+    poslogSetFD(STDOUT_FILENO);
+    poslogSetCB(test_cb);
 
-  //Init
-  poslogInit();
-  
-  poslogGetVersion(&major, &minor, &micro);
-  sprintf(logger_version_string, "0,0$GVLOGVER,%d,%d,%d", major, minor, micro);
-  //activate all possible sinks
-  poslogSetActiveSinks(POSLOG_SINK_DLT|POSLOG_SINK_SYSLOG|POSLOG_SINK_FD|POSLOG_SINK_CB);
-  
-  poslogAddString(logger_version_string);
-  poslogAddStrings(logstrings,2);  
-  
-  //cleanup
-  poslogSetActiveSinks(0);
-  poslogAddString("This log should not appear");
-  closelog();
-  poslogDestroy();
+    //Init
+    poslogInit();
+    
+    poslogGetVersion(&major, &minor, &micro, &level);
+    sprintf(logger_version_string, "0,0$GVLOGVER,%d,%d,%d,%X", major, minor, micro, level);
+    //activate all possible sinks
+    poslogSetActiveSinks(POSLOG_SINK_DLT|POSLOG_SINK_SYSLOG|POSLOG_SINK_FD|POSLOG_SINK_CB);
+    
+    poslogAddString(logger_version_string);
+    poslogAddString(logstrings[0],POSLOG_SEQ_START);
+    poslogAddString(logstrings[1],POSLOG_SEQ_STOP);
+    
+    //cleanup
+    poslogSetActiveSinks(0);
+    poslogAddString("This log should not appear");
+    closelog();
+    poslogDestroy();
 }

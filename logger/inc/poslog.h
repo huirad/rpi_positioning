@@ -39,11 +39,25 @@
 extern "C" {
 #endif
 
+/**
+ * EPoslogReleaseLevel indicates the release level of this API
+ * This enum follows the release level convention used by python
+ * @ref https://docs.python.org/3/c-api/apiabiversion.html
+ */
+typedef enum {
+    POSLOG_REL_ALPHA        = 0xA0,    /**< API is in alpha state, i.e. work in progress. */
+    POSLOG_REL_BETA         = 0xB0,    /**< API is in beta state, i.e. close to be finished. */
+    POSLOG_REL_CANDIDATE    = 0xC0,    /**< API is in release candidate state. */
+    POSLOG_REL_FINAL        = 0xF0,    /**< API is in final state, i.e. officially approved. */
+} EPoslogReleaseLevel;  
 
+    
 // API Version
 #define GENIVI_POSLOG_MAJOR 1
 #define GENIVI_POSLOG_MINOR 0
 #define GENIVI_POSLOG_MICRO 0
+#define GENIVI_POSLOG_LEVEL POSLOG_REL_ALPHA
+
 
 /**
  * TPoslogSinks is used to indicate which sinks are active. 
@@ -63,6 +77,18 @@ typedef enum {
                                              The callback function must be registered using poslogSetCB(). */
 } EPoslogSinks;  
   
+/**
+ * TPoslogSeq is used to allow uninterrupted logging of a sequence of strings
+ * It is a or'ed bitmask of the EPoslogSeq values.
+ */
+typedef uint16_t TPoslogSeq;
+typedef enum {
+    POSLOG_SEQ_CONT         = 0x0000,    /**< String to be logged is in the middle of a sequence. */
+    POSLOG_SEQ_START        = 0x0001,    /**< String to be logged is at the start of a sequence. */
+    POSLOG_SEQ_STOP         = 0x0002,    /**< String to be logged is at the end of a sequence. */
+    POSLOG_SEQ_SINGLE       = 0x0003,    /**< String to be logged is not part of a sequence. */
+} EPoslogSeq;  
+
 
 /**
  * Callback type for a custom log sink provided by the application.
@@ -96,8 +122,9 @@ bool poslogDestroy();
  * @param major Major version number. Changes in this number are used for incompatible API change.
  * @param minor Minor version number. Changes in this number are used for compatible API change.
  * @param micro Micro version number. Changes in this number are used for minor changes.
+ * @param level Release level of this API
  */
-void poslogGetVersion(int *major, int *minor, int *micro);
+void poslogGetVersion(int *major, int *minor, int *micro, EPoslogReleaseLevel *level);
 
 /**
  * Control which sinks are active
@@ -144,25 +171,12 @@ PoslogCallback poslogSetCB(PoslogCallback cb);
  * Add a string to the log.
  * The string will be sent to all currently active sinks.
  * This function is thread safe. Log strings can be provided from concurrent threads.
- * Note: The log string shall *not* contain a line break (\n) at the end.
- * A trailing newline may be added if needed.
+ * Note: The log string shall *not* contain a trailing newline.
  * @note Depending on the type of sink there might be length limitations.
  * @param logstring String to be added to the log.
+ * @param seq Bitmask of the EPoslogSeq values indicating where in a sequence the string is.
  */
-void poslogAddString(const char* logstring);
-
-/**
- * Add a an array of strings to the log.
- * The string will be sent to all currently active sinks.
- * This function is thread safe. Log strings can be provided from concurrent threads.
- * Note: The log string shall *not* contain a line break (\n) at the end.
- * A trailing newline may be added if needed.
- * @note Depending on the type of sink there might be length limitations.
- * @param logstring Array of strings to be added to the log.
- * @param numStrings Number of strings to be added to the log.
- */
-void poslogAddStrings(const char* logstrings[], uint16_t numStrings);
-
+void poslogAddString(const char* logstring, TPoslogSeq seq = POSLOG_SEQ_SINGLE);
 
 #ifdef __cplusplus
 }

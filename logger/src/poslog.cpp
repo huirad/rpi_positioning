@@ -71,11 +71,12 @@ bool poslogDestroy()
     pthread_mutex_unlock(&mutexLog);    
 }
 
-void poslogGetVersion(int *major, int *minor, int *micro)
+void poslogGetVersion(int *major, int *minor, int *micro, EPoslogReleaseLevel *level)
 {
-  *major = GENIVI_POSLOG_MAJOR;
-  *minor = GENIVI_POSLOG_MINOR;
-  *micro = GENIVI_POSLOG_MICRO;
+    *major = GENIVI_POSLOG_MAJOR;
+    *minor = GENIVI_POSLOG_MINOR;
+    *micro = GENIVI_POSLOG_MICRO;
+    *level = GENIVI_POSLOG_LEVEL;
 }
 
 void poslogSetActiveSinks(TPoslogSinks sinks)
@@ -116,39 +117,37 @@ static void poslogAddString_nolock(const char* logstring)
 #if (DLT_ENABLED) 
     if (g_active_sinks & POSLOG_SINK_DLT)
     {
-      DLT_LOG(poslogContext, DLT_LOG_INFO, DLT_STRING(logstring));
+        DLT_LOG(poslogContext, DLT_LOG_INFO, DLT_STRING(logstring));
     }
 #endif
     if (g_active_sinks & POSLOG_SINK_SYSLOG)
     {
-      //syslog(LOG_INFO, logstring);
-      syslog(LOG_EMERG, logstring);
+        //syslog(LOG_INFO, logstring);
+        syslog(LOG_EMERG, logstring);
     }
     if (g_active_sinks & POSLOG_SINK_FD)
     {
-      write(g_fd, logstring, strlen(logstring));
-      write(g_fd, "\n", 1);
+        write(g_fd, logstring, strlen(logstring));
+        write(g_fd, "\n", 1);
     }
     if (g_active_sinks & POSLOG_SINK_CB)
     {
-      if (g_callback) g_callback(logstring);
+        if (g_callback) g_callback(logstring);
     }          
 }
 
-void poslogAddString(const char* logstring)
+void poslogAddString(const char* logstring, TPoslogSeq seq)
 {
-    pthread_mutex_lock(&mutexLog);
+    if (seq & POSLOG_SEQ_START)
+    {
+        pthread_mutex_lock(&mutexLog);
+    }
     poslogAddString_nolock(logstring);
-    pthread_mutex_unlock(&mutexLog);      
+    if (seq & POSLOG_SEQ_STOP)
+    {
+        pthread_mutex_unlock(&mutexLog);
+    }
 }
 
 
-void poslogAddStrings(const char* logstrings[], uint16_t numStrings)
-{
-  pthread_mutex_lock(&mutexLog);
-  for (int i=0; i<numStrings; i++)
-  {
-    poslogAddString_nolock(logstrings[i]);
-  }
-  pthread_mutex_unlock(&mutexLog);      
-}
+
