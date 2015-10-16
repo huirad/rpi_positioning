@@ -52,7 +52,7 @@ void gnssPosition_to_string(uint64_t timestamp, uint16_t countdown, const TGNSSP
         snprintf(
         str,
         size-1, //ensure that there is space for null-terminator
-        "%lu,%hu$GVGNSPOS,%lu,%9.6f,%9.6f,%6.1f,%6.1f,%4.1f,%4.1f,%6.2f,%3.1f,%3.1f,%3.1f,%02hu,%02hu,%02hu,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%u,0X%08X,0X%08X",
+        "%lu,%hu$GVGNSPOS,%lu,%9.6f,%9.6f,%6.1f,%6.1f,%4.1f,%4.1f,%6.2f,%3.1f,%3.1f,%3.1f,%02hu,%02hu,%02hu,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%u,0X%08X,0X%08X,0X%08X,0X%08X",
         timestamp,
         countdown,
         position->timestamp,
@@ -76,6 +76,8 @@ void gnssPosition_to_string(uint64_t timestamp, uint16_t countdown, const TGNSSP
         position->sigmaHeading,
         position->fixStatus,
         position->fixTypeBits,
+        position->activated_systems,
+        position->used_systems,
         position->validityBits
         );
         str[size-1] = 0; //ensure that string is null-terminated
