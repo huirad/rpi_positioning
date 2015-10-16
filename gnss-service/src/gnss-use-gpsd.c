@@ -355,7 +355,7 @@ void *listen( void *ptr )
         {
             if(gps_read(&gpsdata))
             {
-                TGNSSPosition position = = { 0 };
+                TGNSSPosition position = { 0 };
                 if(!extractPosition(&gpsdata,&position))
                 {
                     LOG_ERROR_MSG(gContext,"error extracting position data");
