@@ -19,8 +19,11 @@
 #include "globals.h"
 #include "wheel.h"
 
-WheeltickCallback cbWheelticks = 0;
-TWheelticks gWheelticks;
+static pthread_mutex_t mutexCb  = PTHREAD_MUTEX_INITIALIZER;   //protects the callbacks
+static pthread_mutex_t mutexData = PTHREAD_MUTEX_INITIALIZER;  //protects the data
+
+static volatile WheeltickCallback cbWheelticks = 0;
+static TWheelticks gWheelticks;
 
 bool snsWheeltickInit()
 {
@@ -89,3 +92,20 @@ bool snsWheeltickDeregisterCallback(WheeltickCallback callback)
 
     return false;
 }
+
+void updateWheelticks(const TWheelticks ticks[], uint16_t numElements)
+{
+    if (ticks != NULL && numElements > 0)
+    {
+        pthread_mutex_lock(&mutexData);
+        gWheelticks = ticks[numElements-1];
+        pthread_mutex_unlock(&mutexData);
+        pthread_mutex_lock(&mutexCb);
+        if (cbWheelticks)
+        {
+            cbWheelticks(ticks, numElements);
+        }
+        pthread_mutex_unlock(&mutexCb);
+    }
+}
+

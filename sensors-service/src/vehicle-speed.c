@@ -15,8 +15,11 @@
 #include "vehicle-speed.h"
 #include "sns-meta-data.h"
 
-VehicleSpeedCallback cbVehicleSpeed = 0;
-TVehicleSpeedData gVehicleSpeedData;
+static pthread_mutex_t mutexCb  = PTHREAD_MUTEX_INITIALIZER;   //protects the callbacks
+static pthread_mutex_t mutexData = PTHREAD_MUTEX_INITIALIZER;  //protects the data
+
+static volatile VehicleSpeedCallback cbVehicleSpeed = 0;
+static TVehicleSpeedData gVehicleSpeedData;
 
 bool snsVehicleSpeedInit()
 {
@@ -92,6 +95,18 @@ bool snsVehicleSpeedGetMetaData(TSensorMetaData *data)
     return true;
 }
 
-
-
-
+void updateVehicleSpeedData(const TVehicleSpeedData vehicleSpeedData[], uint16_t numElements)
+{
+    if (vehicleSpeedData != NULL && numElements > 0)
+    {
+        pthread_mutex_lock(&mutexData);
+        gVehicleSpeedData = vehicleSpeedData[numElements-1];
+        pthread_mutex_unlock(&mutexData);
+        pthread_mutex_lock(&mutexCb);
+        if (cbVehicleSpeed)
+        {
+            cbVehicleSpeed(vehicleSpeedData, numElements);
+        }
+        pthread_mutex_unlock(&mutexCb);
+    }
+}

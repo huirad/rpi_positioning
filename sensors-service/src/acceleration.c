@@ -20,8 +20,11 @@
 #include "acceleration.h"
 #include "sns-meta-data.h"
 
-AccelerationCallback cbAcceleration = 0;
-TAccelerationData gAccelerationData;
+static pthread_mutex_t mutexCb  = PTHREAD_MUTEX_INITIALIZER;   //protects the callbacks
+static pthread_mutex_t mutexData = PTHREAD_MUTEX_INITIALIZER;  //protects the data
+
+static volatile AccelerationCallback cbAcceleration = 0;
+static TAccelerationData gAccelerationData;
 TAccelerationConfiguration gAccelerationConfiguration;
 
 bool snsAccelerationInit()
@@ -124,6 +127,19 @@ bool snsAccelerationGetAccelerationConfiguration(TAccelerationConfiguration* con
     return true;
 }
 
-
-
+void updateAccelerationData(const TAccelerationData accelerationData[], uint16_t numElements)
+{
+    if (accelerationData != NULL && numElements > 0)
+    {
+        pthread_mutex_lock(&mutexData);
+        gAccelerationData = accelerationData[numElements-1];
+        pthread_mutex_unlock(&mutexData);
+        pthread_mutex_lock(&mutexCb);
+        if (cbAcceleration)
+        {
+            cbAcceleration(accelerationData, numElements);
+        }
+        pthread_mutex_unlock(&mutexCb);
+    }
+}
 

@@ -20,8 +20,11 @@
 #include "gyroscope.h"
 #include "sns-meta-data.h"
 
-GyroscopeCallback cbGyroscope = 0;
-TGyroscopeData gGyroscopeData;
+static pthread_mutex_t mutexCb  = PTHREAD_MUTEX_INITIALIZER;   //protects the callbacks
+static pthread_mutex_t mutexData = PTHREAD_MUTEX_INITIALIZER;  //protects the data
+
+static volatile GyroscopeCallback cbGyroscope = 0;
+static TGyroscopeData gGyroscopeData;
 TGyroscopeConfiguration gGyroscopeConfiguration;
 
 bool snsGyroscopeInit()
@@ -120,6 +123,21 @@ bool snsGyroscopeGetConfiguration(TGyroscopeConfiguration* gyroConfig)
     return true;
 }
 
+void updateGyroscopeData(const TGyroscopeData gyroData[], uint16_t numElements)
+{
+    if (gyroData != NULL && numElements > 0)
+    {
+        pthread_mutex_lock(&mutexData);
+        gGyroscopeData = gyroData[numElements-1];
+        pthread_mutex_unlock(&mutexData);
+        pthread_mutex_lock(&mutexCb);
+        if (cbGyroscope)
+        {
+            cbGyroscope(gyroData, numElements);
+        }
+        pthread_mutex_unlock(&mutexCb);
+    }
+}
 
 
 
