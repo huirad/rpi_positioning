@@ -4,7 +4,7 @@
 * SPDX-License-Identifier: MPL-2.0
 *
 * \ingroup SensorsService
-* \author Helmut Schmidt 
+* \author Helmut Schmidt <https://github.com/huirad>
 *
 * \copyright Copyright (C) 2015, Helmut Schmidt 
 * 

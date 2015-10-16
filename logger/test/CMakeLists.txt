@@ -22,6 +22,7 @@ message(STATUS "TEST-LOGGER")
 message(STATUS "WITH_DLT = ${WITH_DLT}")
 message(STATUS "WITH_GPSD = ${WITH_GPSD}")
 message(STATUS "WITH_NMEA = ${WITH_NMEA}")
+message(STATUS "WITH_MPU6050 = ${WITH_MPU6050}")
 message(STATUS "WITH_REPLAYER = ${WITH_REPLAYER}")
 message(STATUS "WITH_DEBUG = ${WITH_DEBUG}")
 
@@ -50,9 +51,10 @@ target_link_libraries(test-poslog ${LIBRARIES})
 install(TARGETS test-poslog DESTINATION bin)
 
 
-set(SRCS ${CMAKE_CURRENT_SOURCE_DIR}/test-gnsslog.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/gnsslog.cpp)
-add_executable(test-gnsslog ${SRCS})
+set(SRCS ${CMAKE_CURRENT_SOURCE_DIR}/test-gnss-sns-log.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/gnsslog.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/snslog.cpp)
+add_executable(test-gnss-sns-log ${SRCS})
 set(LIBRARIES pthread poslog)
 
 
@@ -70,7 +72,24 @@ endif()
 message(STATUS "GNSS_LIBRARIES = ${GNSS_LIBRARIES}")
 set(LIBRARIES ${LIBRARIES} ${GNSS_LIBRARIES})
 
-include_directories(${gnss-service_INCLUDE_DIRS})
+set(sns-service_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/../sensors-service/api")
+set(sns-service_LIBRARY_DIRS "${PROJECT_BINARY_DIR}/../sensors-service/src")
+if(WITH_IPHONE)
+    set(SNS_LIBRARIES "sensors-service-use-iphone")
+elseif(WITH_MPU6050)
+    set(SNS_LIBRARIES "sensors-service-use-mpu6050")
+elseif(WITH_REPLAYER)
+    set(SNS_LIBRARIES "sensors-service-use-replayer")
+else()
+    message(STATUS "Invalid cmake options!")
+endif()
+message(STATUS "SNS_LIBRARIES = ${SNS_LIBRARIES}")
+set(LIBRARIES ${LIBRARIES} ${SNS_LIBRARIES})
+
+include_directories(
+    ${gnss-service_INCLUDE_DIRS}
+    ${sns-service_INCLUDE_DIRS}
+)
 
 if(WITH_DLT)
     set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}")
@@ -84,8 +103,8 @@ if(WITH_DEBUG)
     add_definitions("-DDEBUG_ENABLED=1")
 endif()
 
-target_link_libraries(test-gnsslog ${LIBRARIES})
+target_link_libraries(test-gnss-sns-log ${LIBRARIES})
 #message(STATUS "LIBRARIES = ${LIBRARIES}")
 
-install(TARGETS test-gnsslog DESTINATION bin)
+install(TARGETS test-gnss-sns-log DESTINATION bin)
 

@@ -9,6 +9,7 @@
  * @see http://www.invensense.com/mems/gyro/mpu9150.html
  *
  *
+ * @author Helmut Schmidt <https://github.com/huirad>
  * @copyright Copyright (C) 2015, Helmut Schmidt
  * 
  * @license MPL-2.0 <http://spdx.org/licenses/MPL-2.0>
