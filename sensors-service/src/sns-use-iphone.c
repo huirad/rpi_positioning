@@ -97,6 +97,17 @@ void snsGetVersion(int *major, int *minor, int *micro)
     }
 }
 
+bool snsGyroscopeInit()
+{
+    return iGyroscopeInit();
+}
+
+bool snsGyroscopeDestroy()
+{
+    return iGyroscopeDestroy();
+}
+
+
 static bool processGVGYRO(char* data)
 {
     long unsigned int timestamp = 0;

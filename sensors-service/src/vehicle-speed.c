@@ -21,14 +21,14 @@ static pthread_mutex_t mutexData = PTHREAD_MUTEX_INITIALIZER;  //protects the da
 static volatile VehicleSpeedCallback cbVehicleSpeed = 0;
 static TVehicleSpeedData gVehicleSpeedData;
 
-bool snsVehicleSpeedInit()
+bool iVehicleSpeedInit()
 {
     cbVehicleSpeed = 0;
 
     return true;
 }
 
-bool snsVehicleSpeedDestroy()
+bool iVehicleSpeedDestroy()
 {
     pthread_mutex_lock(&mutexCb);
     cbVehicleSpeed = 0;

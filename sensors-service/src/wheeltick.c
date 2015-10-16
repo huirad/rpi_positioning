@@ -25,7 +25,7 @@ static pthread_mutex_t mutexData = PTHREAD_MUTEX_INITIALIZER;  //protects the da
 static volatile WheeltickCallback cbWheelticks = 0;
 static TWheelticks gWheelticks;
 
-bool snsWheeltickInit()
+bool iWheeltickInit()
 {
     int i;
 
@@ -40,7 +40,7 @@ bool snsWheeltickInit()
     return true;
 }
 
-bool snsWheeltickDestroy()
+bool iWheeltickDestroy()
 {
     pthread_mutex_lock(&mutexCb);
     cbWheelticks = 0;

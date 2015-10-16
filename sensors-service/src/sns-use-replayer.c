@@ -16,6 +16,10 @@
 * @licence end@
 **************************************************************************/
 
+#include "sns-init.h"
+#include "acceleration.h"
+#include "gyroscope.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -33,7 +37,6 @@
 #include <memory.h>
 
 #include "globals.h"
-#include "sns-init.h"
 #include "log.h"
 
 #define BUFLEN 256
@@ -90,6 +93,46 @@ void snsGetVersion(int *major, int *minor, int *micro)
     {
         *micro = GENIVI_SNS_API_MICRO;
     }
+}
+
+bool snsAccelerationInit()
+{
+    return iAccelerationInit();
+}
+
+bool snsAccelerationDestroy()
+{
+    return iAccelerationDestroy();
+}
+
+bool snsGyroscopeInit()
+{
+    return iGyroscopeInit();
+}
+
+bool snsGyroscopeDestroy()
+{
+    return iGyroscopeDestroy();
+}
+
+bool snsVehicleSpeedInit()
+{
+    return iVehicleSpeedInit();
+}
+
+bool snsVehicleSpeedDestroy()
+{
+    return iVehicleSpeedDestroy();
+}
+
+bool snsWheeltickInit()
+{
+    return iWheeltickInit();
+}
+
+bool snsWheeltickDestroy()
+{
+    return iWheeltickDestroy();
 }
 
 bool processGVSNSWHTK(char* data)

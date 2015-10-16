@@ -32,6 +32,8 @@ find_package(PkgConfig)
 
 if(WITH_IPHONE)
     set(LIBRARIES sensors-service-use-iphone)
+elseif(WITH_MPU6050)
+    set(LIBRARIES sensors-service-use-mpu6050)
 elseif(WITH_REPLAYER)
     set(LIBRARIES sensors-service-use-replayer)
 else()

@@ -27,7 +27,7 @@ static volatile AccelerationCallback cbAcceleration = 0;
 static TAccelerationData gAccelerationData;
 TAccelerationConfiguration gAccelerationConfiguration;
 
-bool snsAccelerationInit()
+bool iAccelerationInit()
 {
     cbAcceleration = 0;
 
@@ -54,7 +54,7 @@ bool snsAccelerationInit()
     return true;
 }
 
-bool snsAccelerationDestroy()
+bool iAccelerationDestroy()
 {
     pthread_mutex_lock(&mutexCb);
     cbAcceleration = 0;

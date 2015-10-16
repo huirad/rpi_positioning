@@ -27,7 +27,7 @@ static volatile GyroscopeCallback cbGyroscope = 0;
 static TGyroscopeData gGyroscopeData;
 TGyroscopeConfiguration gGyroscopeConfiguration;
 
-bool snsGyroscopeInit()
+bool iGyroscopeInit()
 {
     cbGyroscope = 0;
 
@@ -50,7 +50,7 @@ bool snsGyroscopeInit()
     return true;
 }
 
-bool snsGyroscopeDestroy()
+bool iGyroscopeDestroy()
 {
     pthread_mutex_lock(&mutexCb);
     cbGyroscope = 0;
