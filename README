@@ -47,8 +47,8 @@ To build with tests and reading GPS NMEA data from a GPS receiver attached to /d
 cmake -DWITH_NMEA=ON -DWITH_TESTS=ON -DWITH_DEBUG=ON -DGNSS_DEVICE=\"/dev/ttyACM0\" -DGNSS_BAUDRATE=B38400 ../
 
 To build with tests and reading GPS NMEA data from a GPS receiver attached to /dev/ttyACM0 at 38400
-and with MPU6050 as source for gyro and accelrometer data and with the logger
-cmake -DWITH_NMEA=ON -DWITH_MPU6050=ON -DWITH_LOGGER=ON -DWITH_TESTS=ON -DWITH_DEBUG=ON -DGNSS_DEVICE=\"/dev/ttyACM0\" -DGNSS_BAUDRATE=B38400 ../
+and with MPU6050 as source for gyro and accelerometer data and with the logger but without the EnhancedPositionService:
+cmake -DWITH_ENHANCED_POSITION_SERVICE=OFF -DWITH_NMEA=ON -DWITH_MPU6050=ON -DWITH_LOGGER=ON -DWITH_TESTS=ON -DWITH_DEBUG=ON -DGNSS_DEVICE=\"/dev/ttyACM0\" -DGNSS_BAUDRATE=B38400 ../
 
 
 ===============================
@@ -105,6 +105,16 @@ service:
 ===============================
 Dependencies
 ===============================
+You might have to install additional packages to Compile and run the
+Positioning PoC.
+This section tries to summarize those dependencies.
+Also necessary commands to install those packages are provided for Debian
+based systems (Ubuntu, Raspbian, ...) with the apt package manager.
+Other Linux distributions (e.g. openSuSE) may require some adaptation as
+the package names and even the package manager may be different.
+
+CMake is used to create the make files
+sudo apt-get install cmake
 
 DWITH_GPSD=ON requires that the package 'gpsd' is installed.
 To install 'gpsd', please execute the following commands:
@@ -115,6 +125,10 @@ To test the enhanced-position-service (dbus-service) the packages 'libdbus-c++-d
 To install these packages, please execute the following commands:
 sudo apt-get install libdbus-c++-dev
 sudo apt-get install xsltproc
+On some installations (observed on Raspberry Pi), you even have to 
+sudo apt-get install libdbus-c++
+sudo apt-get install libdbus-1-dev
+sudo ldconfig 
 
 To test the enhanced-position-service (commonapi-service) the package CommonAPI must be installed.
 To install CommonAPI, please see http://git.projects.genivi.org/?p=ipc/common-api-dbus-runtime.git;a=blob;f=README

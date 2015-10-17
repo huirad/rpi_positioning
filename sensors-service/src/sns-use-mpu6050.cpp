@@ -35,34 +35,54 @@
 
 DLT_DECLARE_CONTEXT(gContext);
 
+//configuration parameters - may be set from outside
+
+//configure how to address the mpu6050
+#ifndef MPU6050_I2C_DEV
+#define MPU6050_I2C_DEV MPU6050_I2C_DEV_1
+#endif
+
+//sample interval (ms)
+#ifndef MPU6050_SAMPLE_INTERVAL
+#define MPU6050_SAMPLE_INTERVAL 10
+#endif
+//number of samples per callback
+#ifndef MPU6050_NUM_SAMPLES
+#define MPU6050_NUM_SAMPLES 10
+#endif
+//control whether samples are averaged for the callback
+#ifndef MPU6050_AVG_SAMPLES
+#define MPU6050_AVG_SAMPLES true
+#endif
+
 
 static void mpu6050_cb(const TMPU6050Vector3D acceleration[], const TMPU6050Vector3D gyro_angular_rate[], const float temperature[], const uint64_t timestamp[], const uint16_t num_elements)
 {
-    //simple implementation - assume num_elements always 1
-    TAccelerationData accel = {0};
-    TGyroscopeData gyro = {0};
+    TAccelerationData accel[MPU6050_NUM_SAMPLES] = {0};
+    TGyroscopeData gyro[MPU6050_NUM_SAMPLES] = {0};
     
-    if (num_elements == 1)
+    for (uint16_t i=0; i<num_elements; i++)
     {
-        accel.timestamp = timestamp[0];
-        accel.x = acceleration[0].x*MPU6050_UNIT_1_G;
-        accel.y = acceleration[0].y*MPU6050_UNIT_1_G;
-        accel.z = acceleration[0].z*MPU6050_UNIT_1_G;
-        accel.temperature = temperature[0];
-        accel.validityBits = ACCELERATION_X_VALID | ACCELERATION_Y_VALID | 
-                             ACCELERATION_Z_VALID | ACCELERATION_TEMPERATURE_VALID;
+        accel[i].timestamp = timestamp[i];
+        accel[i].x = acceleration[i].x*MPU6050_UNIT_1_G;
+        accel[i].y = acceleration[i].y*MPU6050_UNIT_1_G;
+        accel[i].z = acceleration[i].z*MPU6050_UNIT_1_G;
+        accel[i].temperature = temperature[i];
+        accel[i].validityBits = ACCELERATION_X_VALID | ACCELERATION_Y_VALID |
+                                ACCELERATION_Z_VALID | ACCELERATION_TEMPERATURE_VALID;
 
-        gyro.timestamp = timestamp[0];
-        gyro.yawRate = gyro_angular_rate[0].z;
-        gyro.pitchRate = gyro_angular_rate[0].y;
-        gyro.rollRate = gyro_angular_rate[0].x;
-        gyro.temperature = temperature[0];
-        gyro.validityBits = GYROSCOPE_YAWRATE_VALID | GYROSCOPE_PITCHRATE_VALID | 
-                            GYROSCOPE_ROLLRATE_VALID | GYROSCOPE_TEMPERATURE_VALID;
+        gyro[i].timestamp = timestamp[i];
+        gyro[i].yawRate = gyro_angular_rate[i].z;
+        gyro[i].pitchRate = gyro_angular_rate[i].y;
+        gyro[i].rollRate = gyro_angular_rate[i].x;
+        gyro[i].temperature = temperature[i];
+        gyro[i].validityBits = GYROSCOPE_YAWRATE_VALID | GYROSCOPE_PITCHRATE_VALID |
+                               GYROSCOPE_ROLLRATE_VALID | GYROSCOPE_TEMPERATURE_VALID;
                              
-        updateAccelerationData(&accel, 1);
-        updateGyroscopeData(&gyro, 1);
     }
+    updateAccelerationData(accel, num_elements);
+    updateGyroscopeData(gyro, num_elements);
+    
 }
 
 bool snsInit()
@@ -99,7 +119,8 @@ bool snsGyroscopeInit()
     bool is_ok = iGyroscopeInit();
     if (is_ok)
     {
-        is_ok = mpu6050_init(MPU6050_I2C_DEV_1, MPU6050_ADDR_1, MPU6050_DLPF_42HZ); 
+        //DLPF cut-off 42Hz fits best to 100Hz sample rate
+        is_ok = mpu6050_init(MPU6050_I2C_DEV, MPU6050_ADDR_1, MPU6050_DLPF_42HZ);
     }
     if (is_ok)
     {    
@@ -107,7 +128,7 @@ bool snsGyroscopeInit()
     }        
     if (is_ok)
     {
-        is_ok = mpu6050_start_reader_thread(10, 10, true);
+        is_ok = mpu6050_start_reader_thread(MPU6050_SAMPLE_INTERVAL, MPU6050_NUM_SAMPLES, MPU6050_AVG_SAMPLES);
     }
     return is_ok;
 }

@@ -404,7 +404,6 @@ static bool fire_callback(const TMPU6050Vector3D acceleration[], const TMPU6050V
             av_temperature /= num_elements;
             uint64_t last_timestamp = timestamp[num_elements-1];
             _cb(&av_acceleration, &av_gyro_angular_rate, &av_temperature, &last_timestamp, 1);
-            //_cb(acceleration, gyro_angular_rate, temperature, timestamp, num_elements); // Test
         }
         else
         {
