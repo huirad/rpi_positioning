@@ -65,6 +65,9 @@ elseif(WITH_NMEA)
     add_library(gnss-service-use-nmea SHARED ${LIB_SRC_USE_NMEA})
     target_link_libraries(gnss-service-use-nmea pthread ${LIBRARIES})
     install(TARGETS gnss-service-use-nmea DESTINATION lib)
+    #for glibc <2.17, clock_gettime is in librt: http://linux.die.net/man/2/clock_gettime
+    #TODO: is there a nice way to detect glibc version in CMake?
+    set(LIBRARIES ${LIBRARIES} rt)
 elseif(WITH_REPLAYER)
     #generate library using replayer as input
     set(LIB_SRC_USE_REPLAYER ${CMAKE_CURRENT_SOURCE_DIR}/gnss-use-replayer.c 

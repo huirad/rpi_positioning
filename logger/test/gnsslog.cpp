@@ -4,12 +4,12 @@
 * SPDX-License-Identifier: MPL-2.0
 *
 * \brief Utility functions to create and log GNSS specific log strings
-*        
+*
 *
 * \author Helmut Schmidt <https://github.com/huirad>
 *
 * \copyright Copyright (C) 2015, Helmut Schmidt
-* 
+*
 * \license
 * This Source Code Form is subject to the terms of the
 * Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with
@@ -18,8 +18,11 @@
 * @licence end@
 **************************************************************************/
 
-#include "gnsslog.h" 
-#include "poslog.h"  
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+
+#include "gnsslog.h"
+#include "poslog.h"
 
 #include "gnss.h"
 
@@ -52,7 +55,7 @@ void gnssPosition_to_string(uint64_t timestamp, uint16_t countdown, const TGNSSP
         snprintf(
         str,
         size-1, //ensure that there is space for null-terminator
-        "%lu,%hu$GVGNSPOS,%lu,%9.6f,%9.6f,%6.1f,%6.1f,%4.1f,%4.1f,%6.2f,%3.1f,%3.1f,%3.1f,%02hu,%02hu,%02hu,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%u,0X%08X,0X%08X,0X%08X,0X%08X",
+        "%"PRIu64",%"PRIu16"$GVGNSPOS,%"PRIu64",%9.6f,%9.6f,%6.1f,%6.1f,%4.1f,%4.1f,%6.2f,%3.1f,%3.1f,%3.1f,%02"PRIu16",%02"PRIu16",%02"PRIu16",%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%u,0X%08X,0X%08X,0X%08X,0X%08X",
         timestamp,
         countdown,
         position->timestamp,
@@ -91,7 +94,7 @@ void gnssTime_to_string(uint64_t timestamp, uint16_t countdown, const TGNSSTime*
         snprintf(
         str,
         size-1, //ensure that there is space for null-terminator
-        "%lu,%hu$GVGNSTIM,%lu,%04u,%02u,%02u,%02u,%02u,%02u,%03u,0X%08X",
+        "%"PRIu64",%"PRIu16"$GVGNSTIM,%"PRIu64",%04"PRIu16",%02"PRIu8",%02"PRIu8",%02"PRIu8",%02"PRIu8",%02"PRIu8",%03"PRIu16",0X%08X",
         timestamp,
         countdown,
         time->timestamp,

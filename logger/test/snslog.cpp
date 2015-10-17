@@ -4,12 +4,12 @@
 * SPDX-License-Identifier: MPL-2.0
 *
 * \brief Utility functions to create and log GNSS specific log strings
-*        
+*
 *
 * \author Helmut Schmidt <https://github.com/huirad>
 *
 * \copyright Copyright (C) 2015, Helmut Schmidt
-* 
+*
 * \license
 * This Source Code Form is subject to the terms of the
 * Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with
@@ -18,8 +18,11 @@
 * @licence end@
 **************************************************************************/
 
-#include "snslog.h" 
-#include "poslog.h"  
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+
+#include "snslog.h"
+#include "poslog.h"
 
 #include "gnss.h"
 
@@ -52,7 +55,7 @@ void accelerationData_to_string(uint64_t timestamp, uint16_t countdown, const TA
         snprintf(
         str,
         size-1, //ensure that there is space for null-terminator
-        "%lu,%hu$GVSNSACC,%lu,%7.4f,%7.4f,%7.4f,%5.1f,0X%08X",
+        "%"PRIu64",%"PRIu16"$GVSNSACC,%"PRIu64",%7.4f,%7.4f,%7.4f,%5.1f,0X%08X",
         timestamp,
         countdown,
         accelerationData->timestamp,
@@ -86,7 +89,7 @@ void gyroscopeData_to_string(uint64_t timestamp, uint16_t countdown, const TGyro
         snprintf(
         str,
         size-1, //ensure that there is space for null-terminator
-        "%lu,%hu$GVSNSGYRO,%lu,%6.2f,%6.2f,%6.2f,%5.1f,0X%08X",
+        "%"PRIu64",%"PRIu16"$GVSNSGYRO,%"PRIu64",%6.2f,%6.2f,%6.2f,%5.1f,0X%08X",
         timestamp,
         countdown,
         gyroData->timestamp,

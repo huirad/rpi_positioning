@@ -31,7 +31,8 @@ message(STATUS "WITH_TESTS = ${WITH_TESTS}")
 message(STATUS "WITH_DEBUG = ${WITH_DEBUG}")
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(DBUS_CPP dbus-c++-1)
+pkg_check_modules(DBUS_CPP REQUIRED dbus-c++-1)
+message(STATUS "DBUS_I = ${DBUS_CPP_INCLUDE_DIRS}")
 
 set(GEN_DIR "${CMAKE_BINARY_DIR}/api")
 

@@ -34,6 +34,7 @@ set(SRCS ${CMAKE_CURRENT_SOURCE_DIR}/test-poslog.cpp)
 add_executable(test-poslog ${SRCS})
 set(LIBRARIES pthread poslog)
 
+
 if(WITH_DLT)
     set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}")
     find_package(DLT REQUIRED)
@@ -85,6 +86,10 @@ else()
 endif()
 message(STATUS "SNS_LIBRARIES = ${SNS_LIBRARIES}")
 set(LIBRARIES ${LIBRARIES} ${SNS_LIBRARIES})
+#for glibc <2.17, clock_gettime is in librt: http://linux.die.net/man/2/clo$
+#TODO: is there a nice way to detect glibc version in CMake?
+set(LIBRARIES ${LIBRARIES} rt)
+
 
 include_directories(
     ${gnss-service_INCLUDE_DIRS}

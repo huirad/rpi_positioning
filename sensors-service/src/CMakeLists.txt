@@ -68,6 +68,9 @@ elseif(WITH_MPU6050)
     add_library(sensors-service-use-mpu6050 SHARED ${LIB_SRC_USE_MPU6050})
     target_link_libraries(sensors-service-use-mpu6050 ${LIBRARIES})
     install(TARGETS sensors-service-use-mpu6050 DESTINATION lib)
+    #for glibc <2.17, clock_gettime is in librt: http://linux.die.net/man/2/clo$
+    #TODO: is there a nice way to detect glibc version in CMake?
+    set(LIBRARIES ${LIBRARIES} rt)
 elseif(WITH_REPLAYER)
     #generate library using replayer as input
     set(LIB_SRC_USE_REPLAYER ${CMAKE_CURRENT_SOURCE_DIR}/sns-use-replayer.c 
