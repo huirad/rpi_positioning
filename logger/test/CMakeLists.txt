@@ -52,10 +52,10 @@ target_link_libraries(test-poslog ${LIBRARIES})
 install(TARGETS test-poslog DESTINATION bin)
 
 
-set(SRCS ${CMAKE_CURRENT_SOURCE_DIR}/test-gnss-sns-log.cpp
+set(SRCS ${CMAKE_CURRENT_SOURCE_DIR}/log-gnss-sns.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gnsslog.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/snslog.cpp)
-add_executable(test-gnss-sns-log ${SRCS})
+add_executable(log-gnss-sns ${SRCS})
 set(LIBRARIES pthread poslog)
 
 
@@ -108,8 +108,8 @@ if(WITH_DEBUG)
     add_definitions("-DDEBUG_ENABLED=1")
 endif()
 
-target_link_libraries(test-gnss-sns-log ${LIBRARIES})
+target_link_libraries(log-gnss-sns ${LIBRARIES})
 #message(STATUS "LIBRARIES = ${LIBRARIES}")
 
-install(TARGETS test-gnss-sns-log DESTINATION bin)
+install(TARGETS log-gnss-sns DESTINATION bin)
 

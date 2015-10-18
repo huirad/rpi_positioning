@@ -55,7 +55,7 @@ void accelerationData_to_string(uint64_t timestamp, uint16_t countdown, const TA
         snprintf(
         str,
         size-1, //ensure that there is space for null-terminator
-        "%"PRIu64",%"PRIu16"$GVSNSACC,%"PRIu64",%7.4f,%7.4f,%7.4f,%5.1f,0X%08X",
+        "%"PRIu64",%"PRIu16",$GVSNSACC,%"PRIu64",%7.4f,%7.4f,%7.4f,%5.1f,0X%08X",
         timestamp,
         countdown,
         accelerationData->timestamp,
@@ -89,7 +89,7 @@ void gyroscopeData_to_string(uint64_t timestamp, uint16_t countdown, const TGyro
         snprintf(
         str,
         size-1, //ensure that there is space for null-terminator
-        "%"PRIu64",%"PRIu16"$GVSNSGYRO,%"PRIu64",%6.2f,%6.2f,%6.2f,%5.1f,0X%08X",
+        "%"PRIu64",%"PRIu16",$GVSNSGYRO,%"PRIu64",%6.2f,%6.2f,%6.2f,%5.1f,0X%08X",
         timestamp,
         countdown,
         gyroData->timestamp,

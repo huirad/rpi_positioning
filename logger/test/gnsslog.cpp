@@ -55,7 +55,7 @@ void gnssPosition_to_string(uint64_t timestamp, uint16_t countdown, const TGNSSP
         snprintf(
         str,
         size-1, //ensure that there is space for null-terminator
-        "%"PRIu64",%"PRIu16"$GVGNSPOS,%"PRIu64",%9.6f,%9.6f,%6.1f,%6.1f,%4.1f,%4.1f,%6.2f,%3.1f,%3.1f,%3.1f,%02"PRIu16",%02"PRIu16",%02"PRIu16",%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%u,0X%08X,0X%08X,0X%08X,0X%08X",
+        "%"PRIu64",%"PRIu16",$GVGNSPOS,%"PRIu64",%9.6f,%9.6f,%6.1f,%6.1f,%4.1f,%4.1f,%6.2f,%3.1f,%3.1f,%3.1f,%02"PRIu16",%02"PRIu16",%02"PRIu16",%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%u,0X%08X,0X%08X,0X%08X,0X%08X",
         timestamp,
         countdown,
         position->timestamp,
@@ -94,7 +94,7 @@ void gnssTime_to_string(uint64_t timestamp, uint16_t countdown, const TGNSSTime*
         snprintf(
         str,
         size-1, //ensure that there is space for null-terminator
-        "%"PRIu64",%"PRIu16"$GVGNSTIM,%"PRIu64",%04"PRIu16",%02"PRIu8",%02"PRIu8",%02"PRIu8",%02"PRIu8",%02"PRIu8",%03"PRIu16",0X%08X",
+        "%"PRIu64",%"PRIu16",$GVGNSTIM,%"PRIu64",%04"PRIu16",%02"PRIu8",%02"PRIu8",%02"PRIu8",%02"PRIu8",%02"PRIu8",%03"PRIu16",0X%08X",
         timestamp,
         countdown,
         time->timestamp,
@@ -118,7 +118,7 @@ void gnssSatelliteDetail_to_string(uint64_t timestamp, uint16_t countdown, const
         snprintf(
         str,
         size-1, //ensure that there is space for null-terminator
-        "%lu,%hu$GVGNSSAT,%lu,%u,%hu,%hu,%hu,%hu,0X%08X,%hu,0X%08X",
+        "%"PRIu64",%"PRIu16",$GVGNSSAT,%"PRIu64",%u,%"PRIu16",%"PRIu16",%"PRIu16",%"PRIu16",0X%08X,%"PRIu16",0X%08X",
         timestamp,
         countdown,
         satelliteDetails->timestamp,
