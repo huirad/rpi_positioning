@@ -293,7 +293,7 @@ int open_GNSS_NMEA_device(const char* gps_device, unsigned int baudrate)
 /* 
   Done
 */
-    LOG_DEBUG(gContext, "OPEN successful %d\n", fd);
+    //LOG_DEBUG(gContext, "OPEN successful %d\n", fd);
     return fd;
 }
 
@@ -315,7 +315,7 @@ void* loop_GNSS_NMEA_device(void* dev)
     HNMEA_Init_GPS_DATA(&gps_data);
 
     /* loop until we have a terminating condition */
-    LOG_DEBUG(gContext, "entering NMEA reading loop %d\n", fd);
+    //LOG_DEBUG(gContext, "entering NMEA reading loop %d\n", fd);
     while (g_GNSS_NMEA_loop) 
     {     
         int res;
@@ -330,11 +330,11 @@ void* loop_GNSS_NMEA_device(void* dev)
         res = select(maxfd, &readfs, NULL, NULL, &Timeout);
         if (res==-1)
         {
-            LOG_DEBUG_MSG(gContext, "select()\n");
+            //LOG_DEBUG_MSG(gContext, "select()\n");
         }
         else if (res==0)
         {
-            LOG_DEBUG_MSG(gContext, "TIMEOUT\n");
+            //LOG_DEBUG_MSG(gContext, "TIMEOUT\n");
         } 
         else if (FD_ISSET(fd, &readfs))
         {
@@ -359,7 +359,7 @@ void* loop_GNSS_NMEA_device(void* dev)
             }
         }
     }
-    LOG_DEBUG_MSG(gContext, "END NMEA reading loop\n");
+    //LOG_DEBUG_MSG(gContext, "END NMEA reading loop\n");
     return NULL;
 }
 
@@ -385,7 +385,7 @@ extern bool gnssInit()
     }
     else
     {
-        perror(GNSS_DEVICE); 
+        //perror(GNSS_DEVICE); 
         return false;     
     }
 }
@@ -394,7 +394,7 @@ extern bool gnssDestroy()
 {
     g_GNSS_NMEA_loop = 0;
     pthread_join (g_thread, NULL);
-    LOG_DEBUG_MSG(gContext, "gnssDestroy: NMEA reader thread terminated\n");
+    //LOG_DEBUG_MSG(gContext, "gnssDestroy: NMEA reader thread terminated\n");
     return true;
 }
 
