@@ -211,7 +211,7 @@ bool extractTime(const GPS_DATA& gps_data, uint64_t timestamp, TGNSSTime& gnss_t
  * @ref http://tldp.org/HOWTO/Serial-Programming-HOWTO/x115.html
  * @param gps_device [IN] device, e.g. "/dev/ttyACM0"
  * @param baudrate [IN] baud rate (see definitions in <asm/termbits.h>
- * @return file descriptor of GNSS device
+ * @return file descriptor of GNSS device, negative values indicate an error
  */
 int open_GNSS_NMEA_device(const char* gps_device, unsigned int baudrate)
 {
@@ -225,7 +225,7 @@ int open_GNSS_NMEA_device(const char* gps_device, unsigned int baudrate)
     fd = open(gps_device, O_RDWR | O_NOCTTY ); 
     if (fd <0) 
     {
-        LOG_ERROR(gContext,"Cannot open: %s", gps_device);
+        //LOG_ERROR(gContext,"Cannot open: %s", gps_device);
         return fd; 
     }
 

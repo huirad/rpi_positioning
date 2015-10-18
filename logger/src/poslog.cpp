@@ -56,7 +56,8 @@ bool poslogInit()
 #if (DLT_ENABLED)
      DLT_REGISTER_CONTEXT(poslogContext,"POSL","Positioning Logging");
 #endif
-    pthread_mutex_unlock(&mutexLog);  
+    pthread_mutex_unlock(&mutexLog);
+    return true;
 }
 
 bool poslogDestroy()
@@ -68,7 +69,8 @@ bool poslogDestroy()
 #if (DLT_ENABLED)    
     DLT_UNREGISTER_CONTEXT(poslogContext);
 #endif
-    pthread_mutex_unlock(&mutexLog);    
+    pthread_mutex_unlock(&mutexLog);
+    return true;
 }
 
 void poslogGetVersion(int *major, int *minor, int *micro, EPoslogReleaseLevel *level)

@@ -55,6 +55,7 @@ DLT_DECLARE_CONTEXT(gContext);
 #define MPU6050_AVG_SAMPLES true
 #endif
 
+static volatile bool is_initialized = false;
 
 static void mpu6050_cb(const TMPU6050Vector3D acceleration[], const TMPU6050Vector3D gyro_angular_rate[], const float temperature[], const uint64_t timestamp[], const uint16_t num_elements)
 {
@@ -87,7 +88,7 @@ static void mpu6050_cb(const TMPU6050Vector3D acceleration[], const TMPU6050Vect
 
 bool snsInit()
 {
-
+    //nothing special to do
     return true;
 }
 
@@ -116,42 +117,60 @@ void snsGetVersion(int *major, int *minor, int *micro)
 
 bool snsGyroscopeInit()
 {
-    bool is_ok = iGyroscopeInit();
-    if (is_ok)
+    bool is_ok = false;
+    if (is_initialized)
     {
-        //DLPF cut-off 42Hz fits best to 100Hz sample rate
-        is_ok = mpu6050_init(MPU6050_I2C_DEV, MPU6050_ADDR_1, MPU6050_DLPF_42HZ);
+        is_ok = true;
     }
-    if (is_ok)
-    {    
-        is_ok = mpu6050_register_callback(&mpu6050_cb);
-    }        
-    if (is_ok)
+    else
     {
-        is_ok = mpu6050_start_reader_thread(MPU6050_SAMPLE_INTERVAL, MPU6050_NUM_SAMPLES, MPU6050_AVG_SAMPLES);
+        is_ok = iGyroscopeInit();
+        if (is_ok)
+        {
+            //DLPF cut-off 42Hz fits best to 100Hz sample rate
+            is_ok = mpu6050_init(MPU6050_I2C_DEV, MPU6050_ADDR_1, MPU6050_DLPF_42HZ);
+        }
+        if (is_ok)
+        {    
+            is_ok = mpu6050_register_callback(&mpu6050_cb);
+        }        
+        if (is_ok)
+        {
+            is_ok = mpu6050_start_reader_thread(MPU6050_SAMPLE_INTERVAL, MPU6050_NUM_SAMPLES, MPU6050_AVG_SAMPLES);
+        }
+        is_initialized = is_ok;
     }
     return is_ok;
 }
 
 bool snsGyroscopeDestroy()
 {
-    bool is_ok = mpu6050_stop_reader_thread();
-    is_ok = is_ok && mpu6050_deregister_callback(&mpu6050_cb);
-    is_ok = is_ok && mpu6050_deinit();
-    is_ok = is_ok && iGyroscopeDestroy();
+    bool is_ok = false;
+    if (!is_initialized)
+    {
+        is_ok = true;
+    }
+    else
+    {
+        is_initialized = false;
+        bool is_ok = mpu6050_stop_reader_thread();
+        is_ok = is_ok && mpu6050_deregister_callback(&mpu6050_cb);
+        is_ok = is_ok && mpu6050_deinit();
+        is_ok = is_ok && iGyroscopeDestroy();
+    }
     return is_ok;    
 }
 
 bool snsAccelerationInit()
 {
     //gyro is the master for mpu6050 - nothing further to initialize
-    return iAccelerationInit();
+    return snsGyroscopeInit();
 }
 
 bool snsAccelerationDestroy()
 {
     //gyro is the master for mpu6050 - nothing further to deeinit
-    return iAccelerationDestroy();
+    return snsGyroscopeDestroy();
 }
 
 //+ some dummy implementations

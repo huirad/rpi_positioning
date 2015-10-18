@@ -107,6 +107,8 @@ int main()
     
     bool is_poslog_init_ok = false;
     bool is_sns_init_ok = false;    
+    bool is_sns_gyro_init_ok = false;
+    bool is_sns_accel_init_ok = false;
     bool is_gnss_init_ok = false;
     int gnss_init_tries = 0;
     
@@ -131,10 +133,27 @@ int main()
         is_sns_init_ok = snsInit();
         if (is_sns_init_ok)
         {
-            snsGyroscopeInit();
-            snsGyroscopeRegisterCallback(&cbGyro);
-            snsAccelerationInit();
-            snsAccelerationRegisterCallback(&cbAccel);
+            is_sns_gyro_init_ok = snsGyroscopeInit();
+            if(is_sns_gyro_init_ok)
+            {
+                poslogAddString("#INF snsGyroscopeInit() success");
+                snsGyroscopeRegisterCallback(&cbGyro);
+            }
+            is_sns_accel_init_ok = snsAccelerationInit();
+            if (is_sns_accel_init_ok)
+            {
+                poslogAddString("#INF snsAccelerationInit() success");
+                snsAccelerationRegisterCallback(&cbAccel);
+            }
+            if (!is_sns_gyro_init_ok && !is_sns_accel_init_ok)
+            {
+                is_sns_init_ok = false;
+                snsDestroy();
+            }
+            else
+            {
+                poslogAddString("#INF snsInit() success");
+            }
         }
 
         //GNSS device may be available a bit late after startup
@@ -147,26 +166,42 @@ int main()
         }
         if (is_gnss_init_ok)
         {
+            poslogAddString("#INF gnssInit() success");
             gnssRegisterTimeCallback(&cbTime);
             gnssRegisterPositionCallback(&cbPosition);
         }
 
-
-        while(!sigint && !sigterm)
+        if (is_sns_init_ok || is_gnss_init_ok)
         {
-            sleep(10);
+            while(!sigint && !sigterm)
+            {
+                sleep(10);
+            }
         }
-
-        //if interruption by user (Ctrl-C), then we have time to cleanup
-        if (sigint && !sigterm) 
+        else
         {
-            poslogAddString("#SIGINT");
+            poslogAddString("#ERR snsInit() or gnssInit() failure - terminating");
+        }
+        
+        //if not interrupted by SIGTERM then we have time to cleanup
+        if (!sigterm) 
+        {
+            if (sigint)
+            {
+                poslogAddString("#SIGINT");
+            }
             if (is_sns_init_ok)
             {
-                snsAccelerationDeregisterCallback(&cbAccel);
-                snsAccelerationDestroy();
-                snsGyroscopeRegisterCallback(&cbGyro);
-                snsGyroscopeDestroy();
+                if (is_sns_accel_init_ok)
+                {
+                    snsAccelerationDeregisterCallback(&cbAccel);
+                    snsAccelerationDestroy();
+                }
+                if (is_sns_gyro_init_ok)
+                {
+                    snsGyroscopeRegisterCallback(&cbGyro);
+                    snsGyroscopeDestroy();
+                }
                 snsDestroy();
             }
             if (is_gnss_init_ok)
@@ -175,8 +210,8 @@ int main()
                 gnssDeregisterTimeCallback(&cbTime);
                 gnssDestroy();
             }
-            poslogDestroy();
         }
+        poslogDestroy();
     }
 #if (DLT_ENABLED)
     DLT_UNREGISTER_APP();
