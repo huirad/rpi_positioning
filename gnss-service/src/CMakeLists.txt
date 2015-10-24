@@ -58,6 +58,12 @@ elseif(WITH_NMEA)
     #generate library using NMEA parser as input
     add_definitions(-DGNSS_DEVICE=${GNSS_DEVICE})
     add_definitions(-DGNSS_BAUDRATE=${GNSS_BAUDRATE})
+    if(GNSS_CHIPSET)
+        add_definitions(-DGNSS_CHIPSET_${GNSS_CHIPSET})
+    endif(GNSS_CHIPSET)
+    if(GNSS_DELAY)
+        add_definitions(-DGNSS_DELAY=${GNSS_DELAY})
+    endif(GNSS_DELAY)
     set(LIB_SRC_USE_NMEA ${CMAKE_CURRENT_SOURCE_DIR}/gnss-use-nmea.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/hnmea.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gnss-impl.c

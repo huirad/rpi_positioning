@@ -24,6 +24,9 @@
 *
 * @licence end@
 **************************************************************************/
+//for integer format macros such as PRIu64
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 
 //provided interface
 #include "gnss-init.h"
@@ -46,6 +49,23 @@
 #include <time.h>
 //the NMEA parser
 #include "hnmea.h"
+
+/**
+ * CONFIGURATION PARAMETERS
+ *
+ * #required
+ * GNSS_DEVICE: device name at which GNSS receiver is attached, e.g. "dev/ttyACM0"
+ * GNSS_BAUDRATE: baud rate of GNSS receiver at device GNSS_DEVICE, e.g. B38400
+ *
+ * #optional
+ * GNSS_CHIPSET_XXX: Identification of GNSS chipset, e.g. GNSS_CHIPSET_UBLOX
+ * GNSS_DELAY: Delay in ms of terminating NMEA sentence with respect to time of fix
+ *
+ */
+#ifndef GNSS_DELAY
+#define GNSS_DELAY 0
+#endif
+
 
 DLT_DECLARE_CONTEXT(gContext);
 
@@ -318,6 +338,7 @@ void* loop_GNSS_NMEA_device(void* dev)
     int    maxfd;     /* maximum file desciptor used */
     int linecount=0;
     char buf[255];
+    NMEA_RESULT trigger = NMEA_GPRMC;
 
     //gps data as returned by NMEA parser
     GPS_DATA gps_data;
@@ -351,11 +372,24 @@ void* loop_GNSS_NMEA_device(void* dev)
             buf[res]=0;             /* set end of string, so we can printf */
             linecount++;
             //LOG_DEBUG(gContext, "%d:%s", linecount, buf);
-            //printf(buf);
+            //printf("%"PRIu64":%s",gnss_get_timestamp(), buf);
             NMEA_RESULT nmea_res = HNMEA_Parse(buf, &gps_data);
-            if (nmea_res == NMEA_GPRMC)
+
+            //most receivers sent GPRMC as last, but u-blox send as first: use other trigger
+            //determine most suitable trigger on actually received messages
+            #ifdef GNSS_CHIPSET_UBLOX
+            if (nmea_res == NMEA_GPGST)  //highest precedence
             {
-                uint64_t timestamp = gnss_get_timestamp();
+                trigger = NMEA_GPGST;
+            }
+            if ((nmea_res == NMEA_GPGSA) && (trigger == NMEA_GPRMC)) //GSA better than RMC
+            {
+                trigger = NMEA_GPGSA;
+            }
+            #endif
+            if (nmea_res == trigger)
+            {
+                uint64_t timestamp = gnss_get_timestamp() - GNSS_DELAY;
                 TGNSSTime gnss_time = { 0 };
                 TGNSSPosition gnss_pos = { 0 };
                 if (extractTime(gps_data, timestamp, gnss_time))
@@ -387,10 +421,13 @@ int g_fd = -1;
 
 extern bool gnssInit()
 {
-    //U-blox receivers: activate GPGST
-    char act_gst[] = "$PUBX,40,GST,0,0,0,1,0,0*5A\r\n";
     g_fd = open_GNSS_NMEA_device(GNSS_DEVICE, GNSS_BAUDRATE);
+    //U-blox receivers: try to activate GPGST
+#ifdef GNSS_CHIPSET_UBLOX
+    char act_gst[] = "$PUBX,40,GST,0,0,0,1,0,0*5A\r\n";
+    //printf("GNSS_CHIPSET == UBLOX\n");
     write(g_fd, act_gst, strlen(act_gst));
+#endif
 
     if (g_fd >=0) 
     {
