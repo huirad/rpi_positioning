@@ -143,8 +143,17 @@ bool extractPosition(const GPS_DATA& gps_data, uint64_t timestamp, TGNSSPosition
     }
     gnss_pos.trackedSatellites = 9999; //not available
     gnss_pos.visibleSatellites = 9999; //not available
-    gnss_pos.sigmaHPosition = 9999; //not available
-    gnss_pos.sigmaAltitude = 9999; //not available
+    if (gps_data.valid & GPS_DATA_HACC) 
+    {     
+        gnss_pos.sigmaHPosition = gps_data.hacc;
+        gnss_pos.validityBits |= GNSS_POSITION_SHPOS_VALID;
+    }
+    if (gps_data.valid & GPS_DATA_HACC) 
+    {     
+        gnss_pos.sigmaAltitude = gps_data.vacc;
+        gnss_pos.validityBits |= GNSS_POSITION_SALT_VALID;
+    }
+
     gnss_pos.sigmaHSpeed = 9999; //not available
     gnss_pos.sigmaVSpeed = 9999; //not available
     gnss_pos.sigmaHeading = 9999; //not available
@@ -342,6 +351,7 @@ void* loop_GNSS_NMEA_device(void* dev)
             buf[res]=0;             /* set end of string, so we can printf */
             linecount++;
             //LOG_DEBUG(gContext, "%d:%s", linecount, buf);
+            //printf(buf);
             NMEA_RESULT nmea_res = HNMEA_Parse(buf, &gps_data);
             if (nmea_res == NMEA_GPRMC)
             {
@@ -377,7 +387,11 @@ int g_fd = -1;
 
 extern bool gnssInit()
 {
+    //U-blox receivers: activate GPGST
+    char act_gst[] = "$PUBX,40,GST,0,0,0,1,0,0*5A\r\n";
     g_fd = open_GNSS_NMEA_device(GNSS_DEVICE, GNSS_BAUDRATE);
+    write(g_fd, act_gst, strlen(act_gst));
+
     if (g_fd >=0) 
     {
         pthread_create (&g_thread, NULL, loop_GNSS_NMEA_device, &g_fd);
