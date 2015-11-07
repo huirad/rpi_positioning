@@ -52,8 +52,8 @@
 #include "hnmea.h"
 
 
-//activathe this #define to print raw NMEA
-#define NMEA_PRINT_RAW
+//activate this #define to print raw NMEA
+//#define NMEA_PRINT_RAW
 
 /**
  * CONFIGURATION PARAMETERS
@@ -412,9 +412,10 @@ void* loop_GNSS_NMEA_device(void* dev)
                     ftime (&curtime);
                     /* Convert it to local time representation. */
                     gmttime = gmtime (&(curtime.time));
-                    printf("HOST_TIME: %"PRIu64": %02d:%02d:%02d.%03d\n",
-                           timestamp, 
-                           gmttime->tm_hour,gmttime->tm_min,gmttime->tm_sec,curtime.millitm);
+                    printf("%"PRIu64",0,$HOSTTIME,%04d,%02d,%02d,%02d,%02d,%02d,%03d\n",
+                           gnss_get_timestamp(), 
+                           gmttime->tm_year+1900, gmttime->tm_mon, gmttime->tm_mday,
+                           gmttime->tm_hour, gmttime->tm_min, gmttime->tm_sec, curtime.millitm);
                     #endif                    
                 }
                 if (extractPosition(gps_data, timestamp, gnss_pos))
