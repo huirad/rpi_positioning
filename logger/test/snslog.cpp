@@ -35,7 +35,7 @@
 
 #define LOG_STRING_SIZE 256
 
-uint64_t snslog_get_timestamp()
+uint64_t snslogGetTimestamp()
 {
     struct timespec time_value;
     if (clock_gettime(CLOCK_MONOTONIC, &time_value) != -1)
@@ -48,7 +48,7 @@ uint64_t snslog_get_timestamp()
   }
 }
 
-void accelerationData_to_string(uint64_t timestamp, uint16_t countdown, const TAccelerationData* accelerationData, char *str, size_t size)
+void accelerationDataToString(uint64_t timestamp, uint16_t countdown, const TAccelerationData* accelerationData, char *str, size_t size)
 {
     if ((str) && (size > 0))
     {
@@ -69,7 +69,7 @@ void accelerationData_to_string(uint64_t timestamp, uint16_t countdown, const TA
     }
 }
 
-void accelerationData_log(uint64_t timestamp, const TAccelerationData accelerationData[], uint16_t numElements)
+void accelerationDataLog(uint64_t timestamp, const TAccelerationData accelerationData[], uint16_t numElements)
 {
     char logstring[LOG_STRING_SIZE] ;
     for (int i=0; i<numElements; i++)
@@ -77,12 +77,12 @@ void accelerationData_log(uint64_t timestamp, const TAccelerationData accelerati
         TPoslogSeq seq = POSLOG_SEQ_CONT;
         if (i==0) seq|=POSLOG_SEQ_START;
         if (i==(numElements-1)) seq|=POSLOG_SEQ_STOP;
-        accelerationData_to_string(timestamp, numElements-i-1, &accelerationData[i], logstring, LOG_STRING_SIZE);
+        accelerationDataToString(timestamp, numElements-i-1, &accelerationData[i], logstring, LOG_STRING_SIZE);
         poslogAddString(logstring, seq);
     }
 }
 
-void gyroscopeData_to_string(uint64_t timestamp, uint16_t countdown, const TGyroscopeData* gyroData, char *str, size_t size)
+void gyroscopeDataToString(uint64_t timestamp, uint16_t countdown, const TGyroscopeData* gyroData, char *str, size_t size)
 {
     if ((str) && (size > 0))
     {
@@ -103,7 +103,7 @@ void gyroscopeData_to_string(uint64_t timestamp, uint16_t countdown, const TGyro
     }
 }
 
-void gyroscopeData_log(uint64_t timestamp, const TGyroscopeData gyroData[], uint16_t numElements)
+void gyroscopeDataLog(uint64_t timestamp, const TGyroscopeData gyroData[], uint16_t numElements)
 {
     char logstring[LOG_STRING_SIZE] ;
     for (int i=0; i<numElements; i++)
@@ -111,7 +111,7 @@ void gyroscopeData_log(uint64_t timestamp, const TGyroscopeData gyroData[], uint
         TPoslogSeq seq = POSLOG_SEQ_CONT;
         if (i==0) seq|=POSLOG_SEQ_START;
         if (i==(numElements-1)) seq|=POSLOG_SEQ_STOP;
-        gyroscopeData_to_string(timestamp, numElements-i-1, &gyroData[i], logstring, LOG_STRING_SIZE);
+        gyroscopeDataToString(timestamp, numElements-i-1, &gyroData[i], logstring, LOG_STRING_SIZE);
         poslogAddString(logstring, seq);
     }
 }

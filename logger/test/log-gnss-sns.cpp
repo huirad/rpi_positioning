@@ -3,7 +3,7 @@
 *
 * SPDX-License-Identifier: MPL-2.0
 *
-* \brief Test program for GNSS logging
+* \brief Test program for GNSS+SNS logging
 *
 *
 * \author Helmut Schmidt <https://github.com/huirad>
@@ -42,7 +42,7 @@
 static volatile bool sigint = false;
 static volatile bool sigterm = false;
 
-static void sig_handler (int sig, siginfo_t *siginfo, void *context)
+static void sigHandler (int sig, siginfo_t *siginfo, void *context)
 {
     if (sig == SIGINT) 
     {
@@ -55,13 +55,13 @@ static void sig_handler (int sig, siginfo_t *siginfo, void *context)
     }
 }
 
-static bool register_sig_handlers()
+static bool registerSigHandlers()
 {
     bool is_success = true;
     
 	struct sigaction action;
  	memset (&action, '\0', sizeof(action));
-	action.sa_sigaction = &sig_handler;
+	action.sa_sigaction = &sigHandler;
 	action.sa_flags = SA_SIGINFO;
 
   	if (sigaction(SIGINT, &action, NULL) < 0) 
@@ -79,22 +79,22 @@ static bool register_sig_handlers()
 
 static void cbTime(const TGNSSTime time[], uint16_t numElements)
 {
-    gnssTime_log(gnsslog_get_timestamp(), time, numElements);
+    gnssTimeLog(gnsslogGetTimestamp(), time, numElements);
 }
 
 static void cbPosition(const TGNSSPosition position[], uint16_t numElements)
 {
-    gnssPosition_log(gnsslog_get_timestamp(), position, numElements);
+    gnssPositionLog(gnsslogGetTimestamp(), position, numElements);
 }
 
 static void cbAccel(const TAccelerationData accelerationData[], uint16_t numElements)
 {
-    accelerationData_log(snslog_get_timestamp(), accelerationData, numElements);
+    accelerationDataLog(snslogGetTimestamp(), accelerationData, numElements);
 }
 
 static void cbGyro(const TGyroscopeData gyroData[], uint16_t numElements)
 {
-    gyroscopeData_log(snslog_get_timestamp(), gyroData, numElements);
+    gyroscopeDataLog(snslogGetTimestamp(), gyroData, numElements);
 }
 
 
@@ -112,7 +112,7 @@ int main()
     bool is_gnss_init_ok = false;
     int gnss_init_tries = 0;
     
-    register_sig_handlers();
+    registerSigHandlers();
     
 #if (DLT_ENABLED)
     DLT_REGISTER_APP("GLT","GNSS/SNS Logger");
@@ -175,7 +175,7 @@ int main()
         {
             while(!sigint && !sigterm)
             {
-                sleep(10);
+                sleep(1);
             }
         }
         else

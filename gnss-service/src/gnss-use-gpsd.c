@@ -89,6 +89,11 @@ bool gnssConfigGNSSSystems(uint32_t activate_systems)
     return false; //satellite system configuration request not supported by gpsd
 }
 
+bool gnssGetSupportedGNSSSystems(uint32_t *supportedSystems)
+{
+    *supportedSystems = GNSS_SYSTEM_GPS;
+    return true;
+}
 
 static EGNSSFixStatus convertToFixStatus(int fixMode)
 {
@@ -355,7 +360,7 @@ void *listen( void *ptr )
         {
             if(gps_read(&gpsdata))
             {
-                TGNSSPosition position = { 0 };
+                TGNSSPosition position = = { 0 };
                 if(!extractPosition(&gpsdata,&position))
                 {
                     LOG_ERROR_MSG(gContext,"error extracting position data");

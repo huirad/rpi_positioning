@@ -40,9 +40,6 @@ option(WITH_MPU6050
 option(WITH_TESTS
     "Compile test applications" OFF)
 
-message(STATUS)
-message(STATUS "---------------------------------------------------------")
-
 add_subdirectory(src)
 message(STATUS "---------------------------------------------------------")
 

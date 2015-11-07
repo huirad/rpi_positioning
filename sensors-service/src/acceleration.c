@@ -24,17 +24,21 @@ static pthread_mutex_t mutexCb  = PTHREAD_MUTEX_INITIALIZER;   //protects the ca
 static pthread_mutex_t mutexData = PTHREAD_MUTEX_INITIALIZER;  //protects the data
 
 static volatile AccelerationCallback cbAcceleration = 0;
-static TAccelerationData gAccelerationData;
+static TAccelerationData gAccelerationData = {0};
 TAccelerationConfiguration gAccelerationConfiguration;
 
 bool iAccelerationInit()
 {
+    pthread_mutex_lock(&mutexCb);
     cbAcceleration = 0;
-
+    pthread_mutex_unlock(&mutexCb);
+    
+    pthread_mutex_lock(&mutexData);
+    gAccelerationData.validityBits = 0;
     //example accelerometer configuration for a 3-axis accelerometer
     gAccelerationConfiguration.dist2RefPointX = 0;
     gAccelerationConfiguration.dist2RefPointY = 0;
-    gAccelerationConfiguration.dist2RefPointZ = 0;    
+    gAccelerationConfiguration.dist2RefPointZ = 0;
     gAccelerationConfiguration.angleYaw = 0;
     gAccelerationConfiguration.anglePitch = 0;
     gAccelerationConfiguration.angleRoll = 0;
@@ -50,6 +54,7 @@ bool iAccelerationInit()
       ACCELERATION_CONFIG_ANGLEPITCH_VALID |
       ACCELERATION_CONFIG_ANGLEROLL_VALID |
       ACCELERATION_CONFIG_TYPE_VALID;
+    pthread_mutex_unlock(&mutexData);
 
     return true;
 }
@@ -65,66 +70,75 @@ bool iAccelerationDestroy()
 
 bool snsAccelerationGetAccelerationData(TAccelerationData * accelerationData)
 {
-    if(!accelerationData)
+    bool retval = false;
+    if(accelerationData)
     {
-    	return false;
+        pthread_mutex_lock(&mutexData);
+        *accelerationData = gAccelerationData;
+        pthread_mutex_unlock(&mutexData);
+        retval = true;
     }
-
-    pthread_mutex_lock(&mutexData);
-    *accelerationData = gAccelerationData;
-    pthread_mutex_unlock(&mutexData);
-
-    return true;
+    return retval;
 }
 
 bool snsAccelerationRegisterCallback(AccelerationCallback callback)
 {
-    //printf("snsAccelerationRegisterCallback\n");
-    if(cbAcceleration != 0) 
-    {
-        return false;
-    }
+    bool retval = false;
 
     pthread_mutex_lock(&mutexCb);
-    cbAcceleration = callback;
+    //only if valid callback and not already registered
+    if(callback && !cbAcceleration)
+    {
+        cbAcceleration = callback;
+        retval = true;
+    }
     pthread_mutex_unlock(&mutexCb);
 
-    return true;
+    return retval;
 }
 
 bool snsAccelerationDeregisterCallback(AccelerationCallback callback)
 {
-    //printf("snsAccelerationDeregisterCallback\n");
-    if(cbAcceleration == callback && callback != 0)
+    bool retval = false;
+
+    pthread_mutex_lock(&mutexCb);
+    if((cbAcceleration == callback) && callback)
     {
-        pthread_mutex_lock(&mutexCb);
         cbAcceleration = 0;
-        pthread_mutex_unlock(&mutexCb);
-
-        return true;
+        retval = true;
     }
+    pthread_mutex_unlock(&mutexCb);
 
-    return false;
+    return retval;
 }
 
 bool snsAccelerationGetMetaData(TSensorMetaData *data)
 {
-    if(data != 0) 
-    {
-        return false;
-    }
+    bool retval = false;    
     
-    pthread_mutex_lock(&mutexData);
-    *data = gSensorsMetaData[3];
-    pthread_mutex_unlock(&mutexData);
+    if(data) 
+    {
+        pthread_mutex_lock(&mutexData);
+        *data = gSensorsMetaData[3];
+        pthread_mutex_unlock(&mutexData);
+        retval = true;
+    }
 
-    return true;
+    return retval;
 }
 
 bool snsAccelerationGetAccelerationConfiguration(TAccelerationConfiguration* config)
 {
-    *config = gAccelerationConfiguration;
-    return true;
+    bool retval = false; 
+    if(config) 
+    {
+        pthread_mutex_lock(&mutexData);
+        *config = gAccelerationConfiguration;
+        pthread_mutex_unlock(&mutexData);
+        retval = true;
+    }
+
+    return retval;
 }
 
 void updateAccelerationData(const TAccelerationData accelerationData[], uint16_t numElements)
@@ -142,4 +156,5 @@ void updateAccelerationData(const TAccelerationData accelerationData[], uint16_t
         pthread_mutex_unlock(&mutexCb);
     }
 }
+
 

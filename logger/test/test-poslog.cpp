@@ -28,7 +28,7 @@
 #include <stdio.h>
 #include <pthread.h>
 
-void test_cb(const char* string)
+void testCb(const char* string)
 {
     printf("CB %s\n", string);
 }
@@ -48,9 +48,9 @@ int main()
 #if (DLT_ENABLED)  
     DLT_REGISTER_APP("PLT","Test Application for Positioning Logging");
 #endif  
-    openlog("POSLOGTEST", LOG_PID, LOG_USER);
+    openlog("POSLOGTEST", LOG_PID, LOG_USER);//syslog
     poslogSetFD(STDOUT_FILENO);
-    poslogSetCB(test_cb);
+    poslogSetCB(testCb);
 
     //Init
     poslogInit();
@@ -67,7 +67,7 @@ int main()
     //cleanup
     poslogSetActiveSinks(0);
     poslogAddString("This log should not appear");
-    closelog();
+    closelog();//syslog
     poslogDestroy();
 #if (DLT_ENABLED)    
     DLT_UNREGISTER_APP();

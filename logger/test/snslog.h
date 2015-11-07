@@ -34,7 +34,7 @@ extern "C" {
  * Provide a system timestamp in milliseconds.
  * @return system timestamp in milliseconds
  */
-uint64_t snslog_get_timestamp();
+uint64_t snslogGetTimestamp();
     
 /**
  * Convert a TAccelerationData structure to a log string.
@@ -47,7 +47,7 @@ uint64_t snslog_get_timestamp();
  * @param str Pointer to a string variable where the log string will be written to.
  * @param size Size of the string variable where the log string will be written to.
  */
-void accelerationData_to_string(uint64_t timestamp, uint16_t countdown, const TAccelerationData* accelerationData, char *str, size_t size);
+void accelerationDataToString(uint64_t timestamp, uint16_t countdown, const TAccelerationData* accelerationData, char *str, size_t size);
 
 /**
  * Write acceleration data to the position log.
@@ -56,7 +56,7 @@ void accelerationData_to_string(uint64_t timestamp, uint16_t countdown, const TA
  * @param accelerationData Pointer to an array of TAccelerationData with size numElements 
  * @param numElements Number of TAccelerationData elements in array accelerationData
  */
-void accelerationData_log(uint64_t timestamp, const TAccelerationData accelerationData[], uint16_t numElements);
+void accelerationDataLog(uint64_t timestamp, const TAccelerationData accelerationData[], uint16_t numElements);
 
 /**
  * Convert a TGyroscopeData structure to a log string.
@@ -69,7 +69,7 @@ void accelerationData_log(uint64_t timestamp, const TAccelerationData accelerati
  * @param str Pointer to a string variable where the log string will be written to.
  * @param size Size of the string variable where the log string will be written to.
  */
-void gyroscopeData_to_string(uint64_t timestamp, uint16_t countdown, const TGyroscopeData* gyroData, char *str, size_t size);
+void gyroscopeDataToString(uint64_t timestamp, uint16_t countdown, const TGyroscopeData* gyroData, char *str, size_t size);
 
 /**
  * Write acceleration data to the position log.
@@ -78,7 +78,7 @@ void gyroscopeData_to_string(uint64_t timestamp, uint16_t countdown, const TGyro
  * @param gyroData Pointer to an array of TGyroscopeData with size numElements 
  * @param numElements Number of TGyroscopeData elements in array gyroData
  */
-void gyroscopeData_log(uint64_t timestamp, const TGyroscopeData gyroData[], uint16_t numElements);
+void gyroscopeDataLog(uint64_t timestamp, const TGyroscopeData gyroData[], uint16_t numElements);
 
 
 #ifdef __cplusplus

@@ -5,7 +5,7 @@
  *
  * \ingroup GNSSService
  * \brief Compliance Level: Abstract Component
- * \copyright Copyright (C) 2012, BMW Car IT GmbH, Continental Automotive GmbH, PCA Peugeot Citroï¿½n, XS Embedded GmbH
+ * \copyright Copyright (C) 2012, BMW Car IT GmbH, Continental Automotive GmbH, PCA Peugeot Citroën, XS Embedded GmbH
  * 
  * \license
  * This Source Code Form is subject to the terms of the
@@ -136,7 +136,7 @@ typedef enum {
     GNSS_SYSTEM_GLONASS_L2     = 0x00000040,       /**< GLONASS (L2 signal) */
     GNSS_SYSTEM_BEIDOU_B2      = 0x00000080,       /**< BeiDou aka COMPASS (B2 signal) */
     /* Numbers >= 0x00010000 are used to identify SBAS (satellite based augmentation system) */
-    GNSS_SYSTEM_SBAS_WAAS      = 0x00010000,       /**< WASS (North America) */
+    GNSS_SYSTEM_SBAS_WAAS      = 0x00010000,       /**< WAAS (North America) */
     GNSS_SYSTEM_SBAS_EGNOS     = 0x00020000,       /**< EGNOS (Europe) */
     GNSS_SYSTEM_SBAS_MSAS      = 0x00040000,       /**< MSAS (Japan) */
     GNSS_SYSTEM_SBAS_QZSS_SAIF = 0x00080000,       /**< QZSS-SAIF (Japan) */
@@ -228,8 +228,8 @@ typedef enum {
     GNSS_POSITION_STAT_VALID            = 0x00040000,    /**< Validity bit for field TGNSSPosition::fixStatus. */
     GNSS_POSITION_TYPE_VALID            = 0x00080000,    /**< Validity bit for field TGNSSPosition::fixTypeBits. */    
     //gnss system information
-    GNSS_POSITION_ASYS_VALID            = 0x00100000,    /**< Validity bit for field TGNSSPosition::activated_systems. */
-    GNSS_POSITION_USYS_VALID            = 0x00200000,    /**< Validity bit for field TGNSSPosition::used_systems. */
+    GNSS_POSITION_ASYS_VALID            = 0x00100000,    /**< Validity bit for field TGNSSPosition::activatedSystems. */
+    GNSS_POSITION_USYS_VALID            = 0x00200000,    /**< Validity bit for field TGNSSPosition::usedSystems. */
 } EGNSSPositionValidityBits;
 
 /**
@@ -241,10 +241,10 @@ typedef struct {
     uint64_t timestamp;             /**< Timestamp of the acquisition of the GNSS data [ms].
                                          All sensor/GNSS timestamps must be based on the same time source. */
     //position
-    double latitude;                /**< Latitude in WGS84 in degrees. */ 
-    double longitude;               /**< Longitude in WGS84 in degrees. */ 
-    float altitudeMSL;              /**< Altitude above mean sea level (geoid) */ 
-    float altitudeEll;              /**< Altitude above WGS84 ellipsoid */ 
+    double latitude;                /**< Latitude in WGS84 in [degree]. */ 
+    double longitude;               /**< Longitude in WGS84 in [degree]. */ 
+    float altitudeMSL;              /**< Altitude above mean sea level (geoid) in [m]. */ 
+    float altitudeEll;              /**< Altitude above WGS84 ellipsoid in [m]. */ 
     //velocity
     float hSpeed;                   /**< Horizontal speed [m/s]. */ 
     float vSpeed;                   /**< Vertical speed [m/s]. */ 
@@ -255,7 +255,7 @@ typedef struct {
     float vdop;                     /**< The vertical (altitude) dilution of precision. */ 
     uint16_t usedSatellites;        /**< Number of satellites used for the GNSS fix. */ 
     uint16_t trackedSatellites;     /**< Number of satellites from which a signal is received. */ 
-    uint16_t visibleSatellites;     /**< Number of satellites expected to be receiveable, i.e. above horizon or elevation mask. */ 
+    uint16_t visibleSatellites;     /**< Number of satellites expected to be receivable, i.e. above horizon or elevation mask. */ 
     //quality parameters: error estimates
     float sigmaHPosition;           /**< Standard error estimate of the horizontal position in [m]. */ 
     float sigmaAltitude;            /**< Standard error estimate of altitude in [m]. */ 
@@ -267,9 +267,9 @@ typedef struct {
     uint32_t fixTypeBits;           /**< Bit mask indicating the sources actually used for the GNSS calculation. 
                                          [bitwise or'ed @ref EGNSSFixType values]. */
     //gnss system information
-    uint32_t activated_systems;     /**< Bit mask indicating the satellite systems that are activated for use
+    uint32_t activatedSystems;      /**< Bit mask indicating the satellite systems that are activated for use
                                          [bitwise or'ed @ref EGNSSSystem values].*/
-    uint32_t used_systems;          /**< Bit mask indicating the satellite systems that are actually used for the position fix
+    uint32_t usedSystems;           /**< Bit mask indicating the satellite systems that are actually used for the position fix
                                          [bitwise or'ed @ref EGNSSSystem values].*/
     //validity bits
     uint32_t validityBits;          /**< Bit mask indicating the validity of each corresponding value.
@@ -429,14 +429,25 @@ bool gnssGetPrecisionTimingOffset(int32_t *delta);
  * the corresponding fields @ref activated_systems and @ref used_systems
  * in @ref TGNSSPosition updates have to be monitored
  *
- * @param activate_systems  Bit mask indicating the satellite systems which shall be activated for use
+ * @param activateSystems   Bit mask indicating the satellite systems which shall be activated for use
  *                          [bitwise or'ed @ref EGNSSSystem values].
  *
  * @return True if the configuration request has been accepted.
  * @return False if the configuration request has not been accepted or is not supported at all.
  *
 */
-bool gnssConfigGNSSSystems(uint32_t activate_systems);
+bool gnssConfigGNSSSystems(uint32_t activateSystems);
+
+/**
+ * Provide the satellite systems which are supported by the GNSS hardware.
+ *
+ * @param supportedSystems  Bit mask indicating the satellite systems which are supported by the GNSS hardware
+ *                          [bitwise or'ed @ref EGNSSSystem values].
+ *
+ * @return True if the supported satellite systems are provided in supportedSystems.
+ *
+*/
+bool gnssGetSupportedGNSSSystems(uint32_t *supportedSystems);
 
 #ifdef __cplusplus
 }

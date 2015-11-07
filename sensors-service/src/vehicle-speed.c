@@ -19,11 +19,17 @@ static pthread_mutex_t mutexCb  = PTHREAD_MUTEX_INITIALIZER;   //protects the ca
 static pthread_mutex_t mutexData = PTHREAD_MUTEX_INITIALIZER;  //protects the data
 
 static volatile VehicleSpeedCallback cbVehicleSpeed = 0;
-static TVehicleSpeedData gVehicleSpeedData;
+static TVehicleSpeedData gVehicleSpeedData = {0};
 
 bool iVehicleSpeedInit()
 {
+    pthread_mutex_lock(&mutexCb);
     cbVehicleSpeed = 0;
+    pthread_mutex_unlock(&mutexCb);
+
+    pthread_mutex_lock(&mutexData);
+    gVehicleSpeedData.validityBits = 0;
+    pthread_mutex_unlock(&mutexData);
 
     return true;
 }
@@ -39,60 +45,61 @@ bool iVehicleSpeedDestroy()
 
 bool snsVehicleSpeedGetVehicleSpeedData(TVehicleSpeedData* vehicleSpeed)
 {
-    if(!vehicleSpeed)
+    bool retval = false;
+    if(vehicleSpeed)
     {
-    	return false;
+        pthread_mutex_lock(&mutexData);
+        *vehicleSpeed = gVehicleSpeedData;
+        pthread_mutex_unlock(&mutexData);
+        retval = true;
     }
-
-    pthread_mutex_lock(&mutexData);
-    *vehicleSpeed = gVehicleSpeedData;
-    pthread_mutex_unlock(&mutexData);
-
-    return true;
+    return retval;
 }
 
 bool snsVehicleSpeedRegisterCallback(VehicleSpeedCallback callback)
 {
-    //printf("snsVehicleSpeedRegisterCallback\n");
-    if(cbVehicleSpeed != 0) 
-    {
-        return false;
-    }
+    bool retval = false;
 
     pthread_mutex_lock(&mutexCb);
-    cbVehicleSpeed = callback;
+    //only if valid callback and not already registered
+    if(callback && !cbVehicleSpeed)
+    {
+        cbVehicleSpeed = callback;
+        retval = true;
+    }
     pthread_mutex_unlock(&mutexCb);
 
-    return true;
+    return retval;
 }
 
 bool snsVehicleSpeedDeregisterCallback(VehicleSpeedCallback callback)
 {
-    //printf("snsGyroscopeDeregisterCallback\n");
-    if(cbVehicleSpeed == callback && callback != 0)
+    bool retval = false;
+
+    pthread_mutex_lock(&mutexCb);
+    if((cbVehicleSpeed == callback) && callback)
     {
-        pthread_mutex_lock(&mutexCb);
         cbVehicleSpeed = 0;
-        pthread_mutex_unlock(&mutexCb);
-
-        return true;
+        retval = true;
     }
+    pthread_mutex_unlock(&mutexCb);
 
-    return false;
+    return retval;
 }
 
 bool snsVehicleSpeedGetMetaData(TSensorMetaData *data)
 {
-    if(data != 0) 
-    {
-        return false;
-    }
+    bool retval = false;    
     
-    pthread_mutex_lock(&mutexData);
-    *data = gSensorsMetaData[2];
-    pthread_mutex_unlock(&mutexData);
+    if(data) 
+    {
+        pthread_mutex_lock(&mutexData);
+        *data = gSensorsMetaData[2];
+        pthread_mutex_unlock(&mutexData);
+        retval = true;
+    }
 
-    return true;
+    return retval;
 }
 
 void updateVehicleSpeedData(const TVehicleSpeedData vehicleSpeedData[], uint16_t numElements)

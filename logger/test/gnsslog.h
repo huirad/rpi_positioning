@@ -33,7 +33,7 @@ extern "C" {
  * Provide a system timestamp in milliseconds.
  * @return system timestamp in milliseconds
  */
-uint64_t gnsslog_get_timestamp();
+uint64_t gnsslogGetTimestamp();
     
 /**
  * Convert a TGNSSPosition structure to a log string.
@@ -46,7 +46,7 @@ uint64_t gnsslog_get_timestamp();
  * @param str Pointer to a string variable where the log string will be written to.
  * @param size Size of the string variable where the log string will be written to.
  */
-void gnssPosition_to_string(uint64_t timestamp, uint16_t countdown, const TGNSSPosition* position, char *str, size_t size);
+void gnssPositionToString(uint64_t timestamp, uint16_t countdown, const TGNSSPosition* position, char *str, size_t size);
 
 /**
  * Convert a TGNSSTime structure to a log string.
@@ -59,7 +59,7 @@ void gnssPosition_to_string(uint64_t timestamp, uint16_t countdown, const TGNSSP
  * @param str Pointer to a string variable where the log string will be written to.
  * @param size Size of the string variable where the log string will be written to.
  */
-void gnssTime_to_string(uint64_t timestamp, uint16_t countdown, const TGNSSTime* time, char *str, size_t size);
+void gnssTimeToString(uint64_t timestamp, uint16_t countdown, const TGNSSTime* time, char *str, size_t size);
 
 /**
  * Convert a TGNSSSatelliteDetail structure to a log string.
@@ -72,7 +72,7 @@ void gnssTime_to_string(uint64_t timestamp, uint16_t countdown, const TGNSSTime*
  * @param str Pointer to a string variable where the log string will be written to.
  * @param size Size of the string variable where the log string will be written to.
  */
-void gnssSatelliteDetail_to_string(uint64_t timestamp, uint16_t countdown, const TGNSSSatelliteDetail* satelliteDetails, char *str, size_t size);
+void gnssSatelliteDetailToString(uint64_t timestamp, uint16_t countdown, const TGNSSSatelliteDetail* satelliteDetails, char *str, size_t size);
 
 /**
  * Write GNSS position data to the position log.
@@ -81,7 +81,7 @@ void gnssSatelliteDetail_to_string(uint64_t timestamp, uint16_t countdown, const
  * @param position Pointer to an array of TGNSSPosition with size numElements 
  * @param numElements Number of TGNSSPosition elements in array position
  */
-void gnssPosition_log(uint64_t timestamp, const TGNSSPosition position[], uint16_t numElements);
+void gnssPositionLog(uint64_t timestamp, const TGNSSPosition position[], uint16_t numElements);
 
 /**
  * Write GNSS time data to the position log.
@@ -90,16 +90,16 @@ void gnssPosition_log(uint64_t timestamp, const TGNSSPosition position[], uint16
  * @param time Pointer to an array of TGNSSTime with size numElements 
  * @param numElements: Number of TGNSSTime elements in array time.  
  */
-void gnssTime_log(uint64_t timestamp, const TGNSSTime time[], uint16_t numElements);
+void gnssTimeLog(uint64_t timestamp, const TGNSSTime time[], uint16_t numElements);
 
 /**
- * Write GNSS satelliet detail data to the position log.
+ * Write GNSS satellite detail data to the position log.
  * 
  * @param timestamp Timestamp when the GNSS satellite detail data have been received [ms]
  * @param satelliteDetail Pointer to an array of TGNSSSatelliteDetail with size numElements 
  * @param numElements: Number of TGNSSSatelliteDetail elements in array satelliteDetail.  
  */
-void gnssSatelliteDetail_log(uint64_t timestamp, const TGNSSSatelliteDetail satelliteDetail[], uint16_t numElements);
+void gnssSatelliteDetailLog(uint64_t timestamp, const TGNSSSatelliteDetail satelliteDetail[], uint16_t numElements);
 
 #ifdef __cplusplus
 }

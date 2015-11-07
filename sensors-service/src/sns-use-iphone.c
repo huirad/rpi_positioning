@@ -117,7 +117,7 @@ static bool processGVGYRO(char* data)
     int32_t sensorId;
     uint32_t n = 0;
 
-    if(!data)
+    if(!data || !pGyroscopeData)
     {
         LOG_ERROR_MSG(gContext,"wrong parameter!");
         return false;
@@ -167,6 +167,7 @@ void *listenForMessages( void *ptr )
     long unsigned int timestamp = 0;
     int s;
     socklen_t slen = sizeof(si_other);
+    ssize_t readBytes = 0;
     char buf[BUFLEN];
     int msgId;
     int port = PORT;
@@ -195,11 +196,15 @@ void *listenForMessages( void *ptr )
 
     while(isRunning == true)
     {
-        if(recvfrom(s, buf, BUFLEN, 0, (struct sockaddr *)&si_other, &slen) == -1)
+        readBytes = recvfrom(s, buf, BUFLEN, 0, (struct sockaddr *)&si_other, &slen);
+
+        if(readBytes < 0)
         {
             LOG_ERROR_MSG(gContext,"recvfrom() failed!");
             exit(EXIT_FAILURE);
         }
+
+        buf[readBytes] = '\0';
 
         LOG_DEBUG_MSG(gContext,"------------------------------------------------");
 
@@ -215,7 +220,7 @@ void *listenForMessages( void *ptr )
 
         if(msgId == GYRO) 
         {
-            processGVGYRO(buf);
+            processGVGYRO(buf, &gGyroscopeData);
         }
 
         pthread_mutex_unlock(&mutexData);

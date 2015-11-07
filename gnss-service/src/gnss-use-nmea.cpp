@@ -47,8 +47,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <sys/timeb.h>
 //the NMEA parser
 #include "hnmea.h"
+
+
+//activathe this #define to print raw NMEA
+#define NMEA_PRINT_RAW
 
 /**
  * CONFIGURATION PARAMETERS
@@ -131,45 +136,45 @@ bool extractPosition(const GPS_DATA& gps_data, uint64_t timestamp, TGNSSPosition
         }
     }
     if (gps_data.valid & GPS_DATA_SPEED) 
-    {    
+    {
         gnss_pos.hSpeed = gps_data.speed;
         gnss_pos.validityBits |= GNSS_POSITION_HSPEED_VALID;
     }
     gnss_pos.vSpeed = 9999; //not available
     if (gps_data.valid & GPS_DATA_SPEED) 
-    {  
+    {
         gnss_pos.heading = gps_data.course;
         gnss_pos.validityBits |= GPS_DATA_COURSE;
     }
     if (gps_data.valid & GPS_DATA_PDOP) 
-    {          
+    {
         gnss_pos.pdop = gps_data.pdop;
         gnss_pos.validityBits |= GNSS_POSITION_PDOP_VALID;
     }
     if (gps_data.valid & GPS_DATA_HDOP) 
-    {  
+    {
         gnss_pos.hdop = gps_data.hdop;
         gnss_pos.validityBits |= GNSS_POSITION_HDOP_VALID;
     }
     if (gps_data.valid & GPS_DATA_VDOP) 
-    {      
+    {
         gnss_pos.vdop = gps_data.vdop;
         gnss_pos.validityBits |= GNSS_POSITION_VDOP_VALID;
     }
     if (gps_data.valid & GPS_DATA_USAT) 
-    {  
+    {
         gnss_pos.usedSatellites = gps_data.usat;
         gnss_pos.validityBits |= GNSS_POSITION_USAT_VALID;
     }
     gnss_pos.trackedSatellites = 9999; //not available
     gnss_pos.visibleSatellites = 9999; //not available
     if (gps_data.valid & GPS_DATA_HACC) 
-    {     
+    {
         gnss_pos.sigmaHPosition = gps_data.hacc;
         gnss_pos.validityBits |= GNSS_POSITION_SHPOS_VALID;
     }
     if (gps_data.valid & GPS_DATA_HACC) 
-    {     
+    {
         gnss_pos.sigmaAltitude = gps_data.vacc;
         gnss_pos.validityBits |= GNSS_POSITION_SALT_VALID;
     }
@@ -177,11 +182,11 @@ bool extractPosition(const GPS_DATA& gps_data, uint64_t timestamp, TGNSSPosition
     gnss_pos.sigmaHSpeed = 9999; //not available
     gnss_pos.sigmaVSpeed = 9999; //not available
     gnss_pos.sigmaHeading = 9999; //not available
-    
+
+    gnss_pos.validityBits |= GNSS_POSITION_STAT_VALID; //always valid
     gnss_pos.fixStatus = GNSS_FIX_STATUS_NO;
     if (gps_data.valid & GPS_DATA_FIX2D)
     {
-        gnss_pos.validityBits |= GNSS_POSITION_STAT_VALID;
         if (gps_data.fix2d)
         {
             gnss_pos.fixStatus = GNSS_FIX_STATUS_2D;
@@ -195,9 +200,9 @@ bool extractPosition(const GPS_DATA& gps_data, uint64_t timestamp, TGNSSPosition
     //hardcoded values for standard GPS receiver
     gnss_pos.fixTypeBits = GNSS_FIX_TYPE_SINGLE_FREQUENCY;
     gnss_pos.validityBits |= GNSS_POSITION_TYPE_VALID;
-    gnss_pos.activated_systems = GNSS_SYSTEM_GPS;
+    gnss_pos.activatedSystems = GNSS_SYSTEM_GPS;
     gnss_pos.validityBits |= GNSS_POSITION_ASYS_VALID;
-    gnss_pos.used_systems = GNSS_SYSTEM_GPS;
+    gnss_pos.usedSystems = GNSS_SYSTEM_GPS;
     gnss_pos.validityBits |= GNSS_POSITION_USYS_VALID;
 
     return true;
@@ -372,7 +377,9 @@ void* loop_GNSS_NMEA_device(void* dev)
             buf[res]=0;             /* set end of string, so we can printf */
             linecount++;
             //LOG_DEBUG(gContext, "%d:%s", linecount, buf);
-            //printf("%"PRIu64":%s",gnss_get_timestamp(), buf);
+            #ifdef NMEA_PRINT_RAW          
+            printf("%"PRIu64",0,%s",gnss_get_timestamp(), buf);
+            #endif            
             NMEA_RESULT nmea_res = HNMEA_Parse(buf, &gps_data);
 
             //most receivers sent GPRMC as last, but u-blox send as first: use other trigger
@@ -395,6 +402,20 @@ void* loop_GNSS_NMEA_device(void* dev)
                 if (extractTime(gps_data, timestamp, gnss_time))
                 {
                     updateGNSSTime(&gnss_time, 1);
+
+                    #ifdef NMEA_PRINT_RAW
+                    /* try to determine GNSS_DELAY assumming a well NTP-synched clock */
+                    /* http://www.ntp.org/ntpfaq/NTP-s-sw-clocks-quality.htm */
+                    struct timeb curtime;
+                    struct tm *gmttime;
+                    /* Get the current time. */
+                    ftime (&curtime);
+                    /* Convert it to local time representation. */
+                    gmttime = gmtime (&(curtime.time));
+                    printf("HOST_TIME: %"PRIu64": %02d:%02d:%02d.%03d\n",
+                           timestamp, 
+                           gmttime->tm_hour,gmttime->tm_min,gmttime->tm_sec,curtime.millitm);
+                    #endif                    
                 }
                 if (extractPosition(gps_data, timestamp, gnss_pos))
                 {
@@ -470,4 +491,10 @@ void gnssGetVersion(int *major, int *minor, int *micro)
 bool gnssConfigGNSSSystems(uint32_t activate_systems)
 {
     return false; //satellite system configuration request not supported by NMEA protocol
+}
+
+bool gnssGetSupportedGNSSSystems(uint32_t *supportedSystems)
+{
+    *supportedSystems = GNSS_SYSTEM_GPS;
+    return true;
 }

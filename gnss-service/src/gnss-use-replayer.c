@@ -102,6 +102,11 @@ bool gnssConfigGNSSSystems(uint32_t activate_systems)
     return false; //satellite system configuration request not supported for replay
 }
 
+bool gnssGetSupportedGNSSSystems(uint32_t *supportedSystems)
+{
+    *supportedSystems = GNSS_SYSTEM_GPS;
+    return true;
+}
 
 //backward compatible processing of GVGNSAC to the new TGNSSPosition
 bool processGVGNSAC(char* data)
@@ -438,7 +443,6 @@ void *listenForMessages( void *ptr )
 {  
     struct sockaddr_in si_me;
     struct sockaddr_in si_other;
-    //int s;
     socklen_t slen = sizeof(si_other);
     ssize_t readBytes = 0;
     char buf[BUFLEN];
@@ -468,44 +472,61 @@ void *listenForMessages( void *ptr )
     }
 
     while(isRunning == true)
-    { 
-        readBytes = recvfrom(s, buf, BUFLEN, 0, (struct sockaddr *)&si_other, (socklen_t *)&slen);
+    {
+        //use select to introduce a timeout - alloy shutdown even when no data are received
+        fd_set readfs;    /* file descriptor set */
+        int    maxfd;     /* maximum file desciptor used */        
+        int res;
+        struct timeval Timeout;
+        /* set timeout value within input loop */
+        Timeout.tv_usec = 0;  /* milliseconds */
+        Timeout.tv_sec  = 1;  /* seconds */
+        FD_SET(s, &readfs);
+        maxfd = s+1;
+        /* block until input becomes available */
+        res = select(maxfd, &readfs, NULL, NULL, &Timeout);
 
-        if(readBytes == -1)
+        if (res > 0)
         {
-            LOG_ERROR_MSG(gContext,"recvfrom() failed!");
-            exit(EXIT_FAILURE);
-        }
-        buf[readBytes] = '\0';
+                    
+            readBytes = recvfrom(s, buf, BUFLEN, 0, (struct sockaddr *)&si_other, (socklen_t *)&slen);
+    
+            if(readBytes < 0)
+            {
+                LOG_ERROR_MSG(gContext,"recvfrom() failed!");
+                exit(EXIT_FAILURE);
+            }
+            buf[readBytes] = '\0';
 
-        LOG_DEBUG_MSG(gContext,"------------------------------------------------");
+            LOG_DEBUG_MSG(gContext,"------------------------------------------------");
 
-        LOG_DEBUG(gContext,"Received Packet from %s:%d", 
-                  inet_ntoa(si_other.sin_addr), ntohs(si_other.sin_port));
+            LOG_DEBUG(gContext,"Received Packet from %s:%d", 
+                      inet_ntoa(si_other.sin_addr), ntohs(si_other.sin_port));
 
-        sscanf(buf, "%*[^'$']$%[^',']", msgId);
+            sscanf(buf, "%*[^'$']$%[^',']", msgId);
+    
+            LOG_DEBUG(gContext,"MsgID:%s",msgId);
+            LOG_DEBUG(gContext,"Len:%d",strlen(buf));
+            LOG_DEBUG(gContext,"Data:%s",buf);
 
-        LOG_DEBUG(gContext,"MsgID:%s",msgId);
-        LOG_DEBUG(gContext,"Len:%d",strlen(buf));
-        LOG_DEBUG(gContext,"Data:%s",buf);
+            LOG_DEBUG_MSG(gContext,"------------------------------------------------");
 
-        LOG_DEBUG_MSG(gContext,"------------------------------------------------");
-
-        if(strcmp("GVGNSP", msgId) == 0)
-        {
-             processGVGNSP(buf);
-        }
-        else if(strcmp("GVGNSC", msgId) == 0)
-        {
-             processGVGNSC(buf);
-        }
-        else if(strcmp("GVGNSAC", msgId) == 0)
-        {
-             processGVGNSAC(buf);
-        }
-        else if(strcmp("GVGNSSAT", msgId) == 0)
-        {
-             processGVGNSSAT(buf);
+            if(strcmp("GVGNSP", msgId) == 0)
+            {
+                 processGVGNSP(buf);
+            }
+            else if(strcmp("GVGNSC", msgId) == 0)
+            {
+                 processGVGNSC(buf);
+            }
+            else if(strcmp("GVGNSAC", msgId) == 0)
+            {
+                 processGVGNSAC(buf);
+            }
+            else if(strcmp("GVGNSSAT", msgId) == 0)
+            {
+                 processGVGNSSAT(buf);
+            }
         }
 
     }
@@ -514,7 +535,4 @@ void *listenForMessages( void *ptr )
 
     return EXIT_SUCCESS;
 }
-
-
-
 

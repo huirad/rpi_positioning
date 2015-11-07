@@ -35,7 +35,7 @@
 
 #define LOG_STRING_SIZE 256
 
-uint64_t gnsslog_get_timestamp()
+uint64_t gnsslogGetTimestamp()
 {
     struct timespec time_value;
     if (clock_gettime(CLOCK_MONOTONIC, &time_value) != -1)
@@ -48,14 +48,14 @@ uint64_t gnsslog_get_timestamp()
   }
 }
 
-void gnssPosition_to_string(uint64_t timestamp, uint16_t countdown, const TGNSSPosition* position, char *str, size_t size)
+void gnssPositionToString(uint64_t timestamp, uint16_t countdown, const TGNSSPosition* position, char *str, size_t size)
 {
     if ((str) && (size > 0))
     {
         snprintf(
         str,
         size-1, //ensure that there is space for null-terminator
-        "%"PRIu64",%"PRIu16",$GVGNSPOS,%"PRIu64",%9.6f,%9.6f,%6.1f,%6.1f,%4.1f,%4.1f,%6.2f,%3.1f,%3.1f,%3.1f,%02"PRIu16",%02"PRIu16",%02"PRIu16",%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%u,0X%08X,0X%08X,0X%08X,0X%08X",
+        "%"PRIu64",%"PRIu16",$GVGNSPOS,%"PRIu64",%10.7f,%10.7f,%6.1f,%6.1f,%4.1f,%4.1f,%6.2f,%3.1f,%3.1f,%3.1f,%02"PRIu16",%02"PRIu16",%02"PRIu16",%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%u,0X%08X,0X%08X,0X%08X,0X%08X",
         timestamp,
         countdown,
         position->timestamp,
@@ -79,15 +79,15 @@ void gnssPosition_to_string(uint64_t timestamp, uint16_t countdown, const TGNSSP
         position->sigmaHeading,
         position->fixStatus,
         position->fixTypeBits,
-        position->activated_systems,
-        position->used_systems,
+        position->activatedSystems,
+        position->usedSystems,
         position->validityBits
         );
         str[size-1] = 0; //ensure that string is null-terminated
     }
 }
 
-void gnssTime_to_string(uint64_t timestamp, uint16_t countdown, const TGNSSTime* time, char *str, size_t size)
+void gnssTimeToString(uint64_t timestamp, uint16_t countdown, const TGNSSTime* time, char *str, size_t size)
 {
     if ((str) && (size > 0))
     {
@@ -111,7 +111,7 @@ void gnssTime_to_string(uint64_t timestamp, uint16_t countdown, const TGNSSTime*
     }
 }
 
-void gnssSatelliteDetail_to_string(uint64_t timestamp, uint16_t countdown, const TGNSSSatelliteDetail* satelliteDetails, char *str, size_t size)
+void gnssSatelliteDetailToString(uint64_t timestamp, uint16_t countdown, const TGNSSSatelliteDetail* satelliteDetails, char *str, size_t size)
 {
     if ((str) && (size > 0))
     {
@@ -135,7 +135,7 @@ void gnssSatelliteDetail_to_string(uint64_t timestamp, uint16_t countdown, const
     }
 }
 
-void gnssPosition_log(uint64_t timestamp, const TGNSSPosition position[], uint16_t numElements)
+void gnssPositionLog(uint64_t timestamp, const TGNSSPosition position[], uint16_t numElements)
 {
     char logstring[LOG_STRING_SIZE] ;
     for (int i=0; i<numElements; i++)
@@ -143,12 +143,12 @@ void gnssPosition_log(uint64_t timestamp, const TGNSSPosition position[], uint16
         TPoslogSeq seq = POSLOG_SEQ_CONT;
         if (i==0) seq|=POSLOG_SEQ_START;
         if (i==(numElements-1)) seq|=POSLOG_SEQ_STOP;
-        gnssPosition_to_string(timestamp, numElements-i-1, &position[i], logstring, LOG_STRING_SIZE);
+        gnssPositionToString(timestamp, numElements-i-1, &position[i], logstring, LOG_STRING_SIZE);
         poslogAddString(logstring, seq);
     }
 }
 
-void gnssTime_log(uint64_t timestamp, const TGNSSTime time[], uint16_t numElements)
+void gnssTimeLog(uint64_t timestamp, const TGNSSTime time[], uint16_t numElements)
 {
     char logstring[LOG_STRING_SIZE] ;
     for (int i=0; i<numElements; i++)
@@ -156,12 +156,12 @@ void gnssTime_log(uint64_t timestamp, const TGNSSTime time[], uint16_t numElemen
         TPoslogSeq seq = POSLOG_SEQ_CONT;
         if (i==0) seq|=POSLOG_SEQ_START;
         if (i==(numElements-1)) seq|=POSLOG_SEQ_STOP;
-        gnssTime_to_string(timestamp, numElements-i-1, &time[i], logstring, LOG_STRING_SIZE);
+        gnssTimeToString(timestamp, numElements-i-1, &time[i], logstring, LOG_STRING_SIZE);
         poslogAddString(logstring, seq);
     }    
 }
 
-void gnssSatelliteDetail_log(uint64_t timestamp, const TGNSSSatelliteDetail satelliteDetail[], uint16_t numElements)
+void gnssSatelliteDetailLog(uint64_t timestamp, const TGNSSSatelliteDetail satelliteDetail[], uint16_t numElements)
 {
     char logstring[LOG_STRING_SIZE] ;
     for (int i=0; i<numElements; i++)
@@ -169,7 +169,7 @@ void gnssSatelliteDetail_log(uint64_t timestamp, const TGNSSSatelliteDetail sate
         TPoslogSeq seq = POSLOG_SEQ_CONT;
         if (i==0) seq|=POSLOG_SEQ_START;
         if (i==(numElements-1)) seq|=POSLOG_SEQ_STOP;
-        gnssSatelliteDetail_to_string(timestamp, numElements-i-1, &satelliteDetail[i], logstring, LOG_STRING_SIZE);
+        gnssSatelliteDetailToString(timestamp, numElements-i-1, &satelliteDetail[i], logstring, LOG_STRING_SIZE);
         poslogAddString(logstring, seq);
     }  
 }

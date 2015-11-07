@@ -79,6 +79,7 @@ elseif(WITH_REPLAYER)
              ${CMAKE_CURRENT_SOURCE_DIR}/acceleration.c
              ${CMAKE_CURRENT_SOURCE_DIR}/vehicle-speed.c
              ${CMAKE_CURRENT_SOURCE_DIR}/sns-meta-data.c)
+
     add_library(sensors-service-use-replayer SHARED ${LIB_SRC_USE_REPLAYER})
     target_link_libraries(sensors-service-use-replayer ${LIBRARIES})
     install(TARGETS sensors-service-use-replayer DESTINATION lib)

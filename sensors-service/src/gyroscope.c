@@ -24,13 +24,17 @@ static pthread_mutex_t mutexCb  = PTHREAD_MUTEX_INITIALIZER;   //protects the ca
 static pthread_mutex_t mutexData = PTHREAD_MUTEX_INITIALIZER;  //protects the data
 
 static volatile GyroscopeCallback cbGyroscope = 0;
-static TGyroscopeData gGyroscopeData;
+static TGyroscopeData gGyroscopeData = {0};
 TGyroscopeConfiguration gGyroscopeConfiguration;
 
 bool iGyroscopeInit()
 {
+    pthread_mutex_lock(&mutexCb);
     cbGyroscope = 0;
+    pthread_mutex_unlock(&mutexCb);
 
+    pthread_mutex_lock(&mutexData);
+    gGyroscopeData.validityBits = 0;
     //example gyroscope configuration for a 3-axis gyro
     gGyroscopeConfiguration.angleYaw = 0;
     gGyroscopeConfiguration.anglePitch = 0;
@@ -46,6 +50,7 @@ bool iGyroscopeInit()
       GYROSCOPE_CONFIG_ANGLEPITCH_VALID |
       GYROSCOPE_CONFIG_ANGLEROLL_VALID |
       GYROSCOPE_CONFIG_TYPE_VALID;
+    pthread_mutex_unlock(&mutexData);
 
     return true;
 }
@@ -61,66 +66,75 @@ bool iGyroscopeDestroy()
 
 bool snsGyroscopeGetGyroscopeData(TGyroscopeData * gyroData)
 {
-    if(!gyroData)
+    bool retval = false;
+    if(gyroData)
     {
-    	return false;
+        pthread_mutex_lock(&mutexData);
+        *gyroData = gGyroscopeData;
+        pthread_mutex_unlock(&mutexData);
+        retval = true;
     }
-
-    pthread_mutex_lock(&mutexData);
-    *gyroData = gGyroscopeData;
-    pthread_mutex_unlock(&mutexData);
-
-    return true;
+    return retval;
 }
 
 bool snsGyroscopeRegisterCallback(GyroscopeCallback callback)
 {
-    //printf("snsGyroscopeRegisterCallback\n");
-    if(cbGyroscope != 0) 
-    {
-        return false;
-    }
+    bool retval = false;
 
     pthread_mutex_lock(&mutexCb);
-    cbGyroscope = callback;
+    //only if valid callback and not already registered
+    if(callback && !cbGyroscope)
+    {
+        cbGyroscope = callback;
+        retval = true;
+    }
     pthread_mutex_unlock(&mutexCb);
 
-    return true;
+    return retval;
 }
 
 bool snsGyroscopeDeregisterCallback(GyroscopeCallback callback)
 {
-    //printf("snsGyroscopeDeregisterCallback\n");
-    if(cbGyroscope == callback && callback != 0)
+    bool retval = false;
+
+    pthread_mutex_lock(&mutexCb);
+    if((cbGyroscope == callback) && callback)
     {
-        pthread_mutex_lock(&mutexCb);
         cbGyroscope = 0;
-        pthread_mutex_unlock(&mutexCb);
-
-        return true;
+        retval = true;
     }
+    pthread_mutex_unlock(&mutexCb);
 
-    return false;
+    return retval;
 }
 
 bool snsGyroscopeGetMetaData(TSensorMetaData *data)
 {
-    if(data != 0) 
-    {
-        return false;
-    }
+    bool retval = false;    
     
-    pthread_mutex_lock(&mutexData);
-    *data = gSensorsMetaData[1];
-    pthread_mutex_unlock(&mutexData);
+    if(data) 
+    {
+        pthread_mutex_lock(&mutexData);
+        *data = gSensorsMetaData[1];
+        pthread_mutex_unlock(&mutexData);
+        retval = true;
+    }
 
-    return true;
+    return retval;
 }
 
 bool snsGyroscopeGetConfiguration(TGyroscopeConfiguration* gyroConfig)
 {
-    *gyroConfig = gGyroscopeConfiguration;
-    return true;
+    bool retval = false; 
+    if(gyroConfig) 
+    {
+        pthread_mutex_lock(&mutexData);
+        *gyroConfig = gGyroscopeConfiguration;
+        pthread_mutex_unlock(&mutexData);
+        retval = true;
+    }
+
+    return retval;
 }
 
 void updateGyroscopeData(const TGyroscopeData gyroData[], uint16_t numElements)
@@ -138,6 +152,7 @@ void updateGyroscopeData(const TGyroscopeData gyroData[], uint16_t numElements)
         pthread_mutex_unlock(&mutexCb);
     }
 }
+
 
 
 
