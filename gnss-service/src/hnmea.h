@@ -69,6 +69,7 @@ typedef struct {
     int time_hh;    //time::hour
     int time_mm;    //time::minute
     int time_ss;    //time::second
+    int time_ms;    //time::millisecond
     double course;  //course (heading) in degrees compass-like
     double speed;   //speed im m/s
     float hdop;     //hdop

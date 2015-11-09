@@ -130,7 +130,13 @@ bool extractPosition(const GPS_DATA& gps_data, uint64_t timestamp, TGNSSPosition
         gnss_pos.altitudeMSL = gps_data.alt;
         gnss_pos.validityBits |= GNSS_POSITION_ALTITUDEMSL_VALID;
         if (gps_data.valid & GPS_DATA_GEOID)
-        {   //http://earth-info.nga.mil/GandG/wgs84/gravitymod/wgs84_180/intptWhel.html
+        {
+            //Geoid separation terminology might be difficult to understand
+            //You can cross check your NMEA output and calculation results
+            //with an online geoid calculator such as:
+            //  http://www.unavco.org/software/geodetic-utilities/geoid-height-calculator/geoid-height-calculator.html
+            //  http://earth-info.nga.mil/GandG/wgs84/gravitymod/wgs84_180/intptWhel.html
+            //  http://geographiclib.sourceforge.net/cgi-bin/GeoidEval
             gnss_pos.altitudeEll = gps_data.alt+gps_data.geoid;
             gnss_pos.validityBits |= GNSS_POSITION_ALTITUDEELL_VALID;
         }
@@ -226,7 +232,7 @@ bool extractTime(const GPS_DATA& gps_data, uint64_t timestamp, TGNSSTime& gnss_t
         gnss_time.hour = gps_data.time_hh;
         gnss_time.minute = gps_data.time_mm;
         gnss_time.second = gps_data.time_ss;
-        gnss_time.ms = 0;
+        gnss_time.ms = gps_data.time_ms;
         gnss_time.validityBits |= GNSS_TIME_TIME_VALID; 
     }
     if (gps_data.valid & GPS_DATA_DATE) 
@@ -444,11 +450,13 @@ int g_fd = -1;
 extern bool gnssInit()
 {
     g_fd = open_GNSS_NMEA_device(GNSS_DEVICE, GNSS_BAUDRATE);
-    //U-blox receivers: try to activate GPGST
+    //U-blox receivers: try to activate GPGST and GPGRS
 #ifdef GNSS_CHIPSET_UBLOX
     char act_gst[] = "$PUBX,40,GST,0,0,0,1,0,0*5A\r\n";
+    char act_grs[] = "$PUBX,40,GRS,0,0,0,1,0,0*5C\r\n";
     //printf("GNSS_CHIPSET == UBLOX\n");
     write(g_fd, act_gst, strlen(act_gst));
+    write(g_fd, act_grs, strlen(act_grs));
 #endif
 
     if (g_fd >=0) 
