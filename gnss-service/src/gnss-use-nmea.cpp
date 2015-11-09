@@ -385,6 +385,7 @@ void* loop_GNSS_NMEA_device(void* dev)
             //LOG_DEBUG(gContext, "%d:%s", linecount, buf);
             #ifdef NMEA_PRINT_RAW          
             printf("%"PRIu64",0,%s",gnss_get_timestamp(), buf);
+            fflush(stdout);
             #endif            
             NMEA_RESULT nmea_res = HNMEA_Parse(buf, &gps_data);
 
@@ -422,6 +423,7 @@ void* loop_GNSS_NMEA_device(void* dev)
                            gnss_get_timestamp(), 
                            gmttime->tm_year+1900, gmttime->tm_mon, gmttime->tm_mday,
                            gmttime->tm_hour, gmttime->tm_min, gmttime->tm_sec, curtime.millitm);
+                    fflush(stdout);
                     #endif                    
                 }
                 if (extractPosition(gps_data, timestamp, gnss_pos))
