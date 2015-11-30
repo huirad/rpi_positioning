@@ -431,13 +431,21 @@ static void* mpu6050_reader_thread(void* param)
 
     while (_mpu6050_reader_loop)
     {
-        mpu6050_read_accel_gyro(&acceleration[sample_idx], &gyro_angular_rate[sample_idx], &temperature[sample_idx], &timestamp[sample_idx]);
-
-        sample_idx++;
-        //fire callback when either the requested number of samples has been acquired or the corresponding time is over
-        if ((sample_idx == _num_samples) || (mpu6050_get_timestamp() > mpu6050_get_timestamp()))
+        if (mpu6050_read_accel_gyro(&acceleration[sample_idx], &gyro_angular_rate[sample_idx], &temperature[sample_idx], &timestamp[sample_idx]))
         {
-            fire_callback(acceleration, gyro_angular_rate, temperature, timestamp, _num_samples, _average);
+            sample_idx++;
+        }
+        else
+        {
+            sample_idx = 0; // ???
+            //TODO fire error callback!!!!! TODO
+        }
+
+
+        //fire callback when either the requested number of samples has been acquired or the corresponding time is over
+        if ((sample_idx == _num_samples) || (mpu6050_get_timestamp() > next_cb))
+        {
+            fire_callback(acceleration, gyro_angular_rate, temperature, timestamp, sample_idx, _average);
             sample_idx = 0;
             next_cb += _sample_interval*_num_samples;
         }
