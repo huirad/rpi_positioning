@@ -19,6 +19,15 @@
 #include "sns-init.h"
 #include "acceleration.h"
 #include "gyroscope.h"
+#include "inclination.h"
+#include "odometer.h"
+#include "reverse-gear.h"
+#include "slip-angle.h"
+#include "steering-angle.h"
+#include "vehicle-data.h"
+#include "vehicle-speed.h"
+#include "vehicle-state.h"
+#include "wheel.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -125,14 +134,14 @@ bool snsVehicleSpeedDestroy()
     return iVehicleSpeedDestroy();
 }
 
-bool snsWheeltickInit()
+bool snsWheelInit()
 {
-    return iWheeltickInit();
+    return iWheelInit();
 }
 
-bool snsWheeltickDestroy()
+bool snsWheelDestroy()
 {
-    return iWheeltickDestroy();
+    return iWheelDestroy();
 }
 
 bool processGVSNSWHTK(char* data)
@@ -140,13 +149,13 @@ bool processGVSNSWHTK(char* data)
     //parse data like: 061076000,0$GVSNSWHTK,061076000,7,266,8,185,0,0,0,0
     
     //storage for buffered data
-    static TWheelticks buf_whtk[MAX_BUF_MSG];
+    static TWheelData buf_whtk[MAX_BUF_MSG];
     static uint16_t buf_size = 0;
     static uint16_t last_countdown = 0;    
 
     uint64_t timestamp;
     uint16_t countdown;
-    TWheelticks whtk = { 0 };
+    TWheelData whtk = { 0 };
     uint32_t n = 0;
 
     if(!data)
@@ -155,13 +164,14 @@ bool processGVSNSWHTK(char* data)
         return false;
     }
 
+/* TODO adapt to new TWheelData
     n = sscanf(data, "%llu,%hu$GVSNSWHTK,%llu,%u,%u,%u,%u,%u,%u,%u,%u", &timestamp, &countdown, &whtk.timestamp
       ,&whtk.elements[0].wheeltickIdentifier, &whtk.elements[0].wheeltickCounter
       ,&whtk.elements[1].wheeltickIdentifier, &whtk.elements[1].wheeltickCounter
       ,&whtk.elements[2].wheeltickIdentifier, &whtk.elements[2].wheeltickCounter
       ,&whtk.elements[3].wheeltickIdentifier, &whtk.elements[3].wheeltickCounter
       );
-
+*/
     if (n <= 0)
     {
         LOG_ERROR_MSG(gContext,"replayer: processGVSNSWHTK failed!");
@@ -196,7 +206,7 @@ bool processGVSNSWHTK(char* data)
 
     if((countdown == 0) && (buf_size >0) )
     {
-        updateWheelticks(buf_whtk,buf_size);
+        updateWheelData(buf_whtk, buf_size);
         buf_size = 0;
         last_countdown = 0;        
     }

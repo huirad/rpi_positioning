@@ -87,3 +87,4 @@ void HNMEA_Init_GPS_DATA(GPS_DATA* gps_data);
 NMEA_RESULT HNMEA_Parse(char* line, GPS_DATA* gps_data);
 
 #endif //_HNMEA_H
+

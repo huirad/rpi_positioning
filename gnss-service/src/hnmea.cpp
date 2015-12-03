@@ -879,3 +879,4 @@ NMEA_RESULT HNMEA_Parse(char* line, GPS_DATA* gps_data)
     }
     return ret;
 }
+

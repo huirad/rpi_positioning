@@ -32,6 +32,8 @@
 #include "gnss-init.h"
 //GNSS data types
 #include "gnss.h"
+//GNSS status
+#include "gnss-status.h"
 //helper functions to dispatch the receeived data
 #include "globals.h"
 //log/trace macros
@@ -71,7 +73,6 @@
 #define GNSS_DELAY 0
 #endif
 
-
 DLT_DECLARE_CONTEXT(gContext);
 
 /**
@@ -80,10 +81,13 @@ DLT_DECLARE_CONTEXT(gContext);
  * 
  */
 
-
 /** Flag to terminate NMEA reader thread */
 volatile int g_GNSS_NMEA_loop=1; 
 
+/** Maximum number of retries to re-open GNSS_DEVICE when select() returns an error */
+#define OPEN_RETRY_MAX 15
+/** Delay between retiers in seconds */
+#define OPEN_RETRY_DELAY 2
 
 /**
  * Provide a system timestamp in milliseconds.
@@ -102,6 +106,22 @@ static uint64_t gnss_get_timestamp()
   }
 }
 
+/**
+ * Helper function to conventiently set GNSS status
+  */
+void setGNSSStatus(EGNSSStatus newStatus)
+{
+    static EGNSSStatus lastStatus = GNSS_STATUS_NOTAVAILABLE;
+    if(newStatus != lastStatus)
+    {
+        lastStatus = newStatus;
+        TGNSSStatus status = {0};
+        status.timestamp = gnss_get_timestamp();
+        status.status = newStatus;
+        status.validityBits = GNSS_STATUS_STATUS_VALID;
+        updateGNSSStatus(&status);
+    }
+}   
 
 /**
  * Convert GPS data from NMEA parser to TGNSSPosition struct
@@ -349,8 +369,10 @@ void* loop_GNSS_NMEA_device(void* dev)
     int    maxfd;     /* maximum file desciptor used */
     int linecount=0;
     char buf[255];
+    //read failure - used to trigger restart
+    bool read_failure = false;
+    //trigger message
     NMEA_RESULT trigger = NMEA_GPRMC;
-
     //gps data as returned by NMEA parser
     GPS_DATA gps_data;
     HNMEA_Init_GPS_DATA(&gps_data);
@@ -360,18 +382,18 @@ void* loop_GNSS_NMEA_device(void* dev)
     while (g_GNSS_NMEA_loop) 
     {     
         int res;
-        struct timeval Timeout;
+        struct timeval timeout;
         /* set timeout value within input loop */
-        Timeout.tv_usec = 0;  /* milliseconds */
-        Timeout.tv_sec  = 2;  /* seconds */
+        timeout.tv_usec = 0;  /* milliseconds */
+        timeout.tv_sec  = 2;  /* seconds */
         FD_SET(fd, &readfs);
         maxfd = fd+1;
 
         /* block until input becomes available */
-        res = select(maxfd, &readfs, NULL, NULL, &Timeout);
+        res = select(maxfd, &readfs, NULL, NULL, &timeout);
         if (res==-1)
         {
-            //LOG_DEBUG_MSG(gContext, "select()\n");
+            read_failure = true;
         }
         else if (res==0)
         {
@@ -380,13 +402,17 @@ void* loop_GNSS_NMEA_device(void* dev)
         else if (FD_ISSET(fd, &readfs))
         {
             res = read(fd,buf,255); 
+            if (res == 0)
+            {
+                read_failure = true;
+            }
             buf[res]=0;             /* set end of string, so we can printf */
             linecount++;
             //LOG_DEBUG(gContext, "%d:%s", linecount, buf);
-            #ifdef NMEA_PRINT_RAW          
+            #ifdef NMEA_PRINT_RAW
             printf("%"PRIu64",0,%s",gnss_get_timestamp(), buf);
             fflush(stdout);
-            #endif            
+            #endif
             NMEA_RESULT nmea_res = HNMEA_Parse(buf, &gps_data);
 
             //most receivers sent GPRMC as last, but u-blox send as first: use other trigger
@@ -403,6 +429,7 @@ void* loop_GNSS_NMEA_device(void* dev)
             #endif
             if (nmea_res == trigger)
             {
+                setGNSSStatus(GNSS_STATUS_AVAILABLE);
                 uint64_t timestamp = gnss_get_timestamp() - GNSS_DELAY;
                 TGNSSTime gnss_time = { 0 };
                 TGNSSPosition gnss_pos = { 0 };
@@ -420,11 +447,11 @@ void* loop_GNSS_NMEA_device(void* dev)
                     /* Convert it to local time representation. */
                     gmttime = gmtime (&(curtime.time));
                     printf("%"PRIu64",0,$HOSTTIME,%04d,%02d,%02d,%02d,%02d,%02d,%03d\n",
-                           gnss_get_timestamp(), 
+                           gnss_get_timestamp(),
                            gmttime->tm_year+1900, gmttime->tm_mon, gmttime->tm_mday,
                            gmttime->tm_hour, gmttime->tm_min, gmttime->tm_sec, curtime.millitm);
                     fflush(stdout);
-                    #endif                    
+                    #endif
                 }
                 if (extractPosition(gps_data, timestamp, gnss_pos))
                 {
@@ -432,7 +459,32 @@ void* loop_GNSS_NMEA_device(void* dev)
                 }
             }
         }
+        if(read_failure)
+        {
+            //Error - try to restart device connection
+            setGNSSStatus(GNSS_STATUS_RESTARTING);
+            close(fd);
+            fd = -1;
+            int device_open_retries = 0;
+            while ((device_open_retries < OPEN_RETRY_MAX) && (fd < 0))
+            {
+                device_open_retries++;
+                sleep(OPEN_RETRY_DELAY);
+                fd = open_GNSS_NMEA_device(GNSS_DEVICE, GNSS_BAUDRATE);
+            }
+            if (fd >=0)
+            {
+                read_failure = false;
+            }
+            else
+            {
+                //reopen failed: terminate thread
+                setGNSSStatus(GNSS_STATUS_FAILURE);
+                g_GNSS_NMEA_loop = 0;
+            }
+        }
     }
+    close(fd);
     //LOG_DEBUG_MSG(gContext, "END NMEA reading loop\n");
     return NULL;
 }
@@ -451,8 +503,11 @@ int g_fd = -1;
 
 extern bool gnssInit()
 {
+    setGNSSStatus(GNSS_STATUS_INITIALIZING);
     g_fd = open_GNSS_NMEA_device(GNSS_DEVICE, GNSS_BAUDRATE);
-    //U-blox receivers: try to activate GPGST and GPGRS
+    if (g_fd >=0)
+    {
+        //U-blox receivers: try to activate GPGST
 #ifdef GNSS_CHIPSET_UBLOX
     char act_gst[] = "$PUBX,40,GST,0,0,0,1,0,0*5A\r\n";
     char act_grs[] = "$PUBX,40,GRS,0,0,0,1,0,0*5C\r\n";
@@ -460,15 +515,12 @@ extern bool gnssInit()
     write(g_fd, act_gst, strlen(act_gst));
     write(g_fd, act_grs, strlen(act_grs));
 #endif
-
-    if (g_fd >=0) 
-    {
-        pthread_create (&g_thread, NULL, loop_GNSS_NMEA_device, &g_fd);
+        pthread_create(&g_thread, NULL, loop_GNSS_NMEA_device, &g_fd);
         return true;
     }
     else
     {
-        //perror(GNSS_DEVICE); 
+        setGNSSStatus(GNSS_STATUS_FAILURE);
         return false;     
     }
 }
@@ -476,7 +528,7 @@ extern bool gnssInit()
 extern bool gnssDestroy()
 {
     g_GNSS_NMEA_loop = 0;
-    pthread_join (g_thread, NULL);
+    pthread_join(g_thread, NULL);
     //LOG_DEBUG_MSG(gContext, "gnssDestroy: NMEA reader thread terminated\n");
     return true;
 }
@@ -499,7 +551,7 @@ void gnssGetVersion(int *major, int *minor, int *micro)
     }
 }
 
-bool gnssConfigGNSSSystems(uint32_t activate_systems)
+bool gnssSetGNSSSystems(uint32_t activate_systems)
 {
     return false; //satellite system configuration request not supported by NMEA protocol
 }

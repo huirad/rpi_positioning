@@ -39,19 +39,23 @@ extern const TSensorMetaData gSensorsMetaData[];
 bool iAccelerationInit();
 bool iAccelerationDestroy();
 void updateAccelerationData(const TAccelerationData accelerationData[], uint16_t numElements);
+void updateAccelerationStatus(const TSensorStatus* status);
 
 bool iGyroscopeInit();
 bool iGyroscopeDestroy();
 void updateGyroscopeData(const TGyroscopeData gyroData[], uint16_t numElements);
+void updateGyroscopeStatus(const TSensorStatus* status);
 
 
-bool iWheeltickInit();
-bool iWheeltickDestroy();
-void updateWheelticks(const TWheelticks ticks[], uint16_t numElements);
+bool iWheelInit();
+bool iWheelDestroy();
+void updateWheelData(const TWheelData wheelData[], uint16_t numElements);
+void updateWheelStatus(const TSensorStatus* status);
 
 bool iVehicleSpeedInit();
 bool iVehicleSpeedDestroy();
 void updateVehicleSpeedData(const TVehicleSpeedData vehicleSpeedData[], uint16_t numElements);
+void updateVehicleSpeedStatus(const TSensorStatus* status);
 
 #ifdef __cplusplus
 }

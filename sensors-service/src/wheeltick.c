@@ -22,59 +22,58 @@
 static pthread_mutex_t mutexCb  = PTHREAD_MUTEX_INITIALIZER;   //protects the callbacks
 static pthread_mutex_t mutexData = PTHREAD_MUTEX_INITIALIZER;  //protects the data
 
-static volatile WheeltickCallback cbWheelticks = 0;
-static TWheelticks gWheelticks = {0};
+static volatile WheelCallback cbWheel = 0;
+static TWheelData gWheelData = {0};
 
-bool iWheeltickInit()
+static TSensorStatus gStatus = {0};
+static volatile SensorStatusCallback cbStatus = 0;
+
+bool iWheelInit()
 {
     int i;
 
     pthread_mutex_lock(&mutexCb);
-    cbWheelticks = 0;
+    cbWheel = 0;
     pthread_mutex_unlock(&mutexCb);
 
     pthread_mutex_lock(&mutexData);
-    for(i = 0; i < WHEEL_NUM_ELEMENTS; i++)
-    {
-        gWheelticks.elements[i].wheeltickCounter = 0;
-        gWheelticks.elements[i].wheeltickIdentifier = WHEEL_INVALID;
-    }
+    gWheelData.validityBits = 0;
     pthread_mutex_unlock(&mutexData);
 
     return true;
 }
 
-bool iWheeltickDestroy()
+bool iWheelDestroy()
 {
     pthread_mutex_lock(&mutexCb);
-    cbWheelticks = 0;
+    cbWheel = 0;
     pthread_mutex_unlock(&mutexCb);
 
     return true;
 }
 
-bool snsWheeltickGetWheelticks(TWheelticks * ticks)
+bool snsWheelGetWheelData(TWheelData *wheelData)
 {
     bool retval = false;
-    if(ticks)
+    if(wheelData)
     {
         pthread_mutex_lock(&mutexData);
-        *ticks = gWheelticks;
+        *wheelData = gWheelData;
         pthread_mutex_unlock(&mutexData);
         retval = true;
     }
     return retval;
 }
 
-bool snsWheeltickRegisterCallback(WheeltickCallback callback)
+bool snsWheelRegisterCallback(WheelCallback callback)
 {
     bool retval = false;
 
     pthread_mutex_lock(&mutexCb);
     //only if valid callback and not already registered
-    if(callback && !cbWheelticks)
+    if(callback && !cbWheel)
     {
-        cbWheelticks = callback;
+        cbWheel = callback;
         retval = true;
     }
     pthread_mutex_unlock(&mutexCb);
@@ -82,14 +81,14 @@ bool snsWheeltickRegisterCallback(WheeltickCallback callback)
     return retval;
 }
 
-bool snsWheeltickDeregisterCallback(WheeltickCallback callback)
+bool snsWheelDeregisterCallback(WheelCallback callback)
 {
     bool retval = false;
 
     pthread_mutex_lock(&mutexCb);
-    if((cbWheelticks == callback) && callback)
+    if((cbWheel == callback) && callback)
     {
-        cbWheelticks = 0;
+        cbWheel = 0;
         retval = true;
     }
     pthread_mutex_unlock(&mutexCb);
@@ -97,17 +96,76 @@ bool snsWheeltickDeregisterCallback(WheeltickCallback callback)
     return retval;
 }
 
-void updateWheelticks(const TWheelticks ticks[], uint16_t numElements)
+void updateWheelData(const TWheelData wheelData[], uint16_t numElements)
 {
-    if (ticks != NULL && numElements > 0)
+    if (wheelData != NULL && numElements > 0)
     {
         pthread_mutex_lock(&mutexData);
-        gWheelticks = ticks[numElements-1];
+        gWheelData = wheelData[numElements-1];
         pthread_mutex_unlock(&mutexData);
         pthread_mutex_lock(&mutexCb);
-        if (cbWheelticks)
+        if (cbWheel)
         {
-            cbWheelticks(ticks, numElements);
+            cbWheel(wheelData, numElements);
+        }
+        pthread_mutex_unlock(&mutexCb);
+    }
+}
+
+bool snsWheelGetStatus(TSensorStatus* status){
+    bool retval = false;
+    if(status)
+    {
+        pthread_mutex_lock(&mutexData);
+        *status = gStatus;
+        pthread_mutex_unlock(&mutexData);
+        retval = true;
+    }
+    return retval;
+}
+
+bool snsWheelRegisterStatusCallback(SensorStatusCallback callback)
+{
+    bool retval = false;
+
+    pthread_mutex_lock(&mutexCb);
+    //only if valid callback and not already registered
+    if(callback && !cbStatus)
+    {
+        cbStatus = callback;
+        retval = true;
+    }
+    pthread_mutex_unlock(&mutexCb);
+
+    return retval;
+}
+
+bool snsWheelDeregisterStatusCallback(SensorStatusCallback callback)
+{
+    bool retval = false;
+
+    pthread_mutex_lock(&mutexCb);
+    if((cbStatus == callback) && callback)
+    {
+        cbStatus = 0;
+        retval = true;
+    }
+    pthread_mutex_unlock(&mutexCb);
+
+    return retval;
+}
+
+void updateWheelStatus(const TSensorStatus* status)
+{
+    if (status)
+    {
+        pthread_mutex_lock(&mutexData);
+        gStatus = *status;
+        pthread_mutex_unlock(&mutexData);
+        pthread_mutex_lock(&mutexCb);
+        if (cbStatus)
+        {
+            cbStatus(status);
         }
         pthread_mutex_unlock(&mutexCb);
     }
