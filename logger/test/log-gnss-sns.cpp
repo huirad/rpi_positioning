@@ -31,11 +31,106 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <signal.h>
+#include <inttypes.h>
 
 #include "gnss-init.h"
 #include "gnss.h"
 #include "gnss-status.h"
 #include "sns-init.h"
+
+
+
+/**
+ * Double buffer for log strings
+ * Purpose: avoid blockingt of callback functions by I/O
+ * Multiple writer threads are allowed but only on reader thread
+ */
+class DBuf {
+
+#define DBUF_STRING_SIZE 256
+#define DBUF_NUM_LINES 512
+
+    struct SBuf {
+    public:      
+        char strings [DBUF_STRING_SIZE] [DBUF_NUM_LINES];
+        uint16_t rnext;
+        uint16_t wnext;
+        SBuf(): rnext(0), wnext(0) {};
+    };
+
+    SBuf* wbuf;
+    SBuf* rbuf;
+    pthread_mutex_t wmutex;
+    pthread_mutex_t rmutex;
+public:
+    
+    DBuf()
+    {
+        pthread_mutex_init(&wmutex, NULL);
+        pthread_mutex_init(&rmutex, NULL);
+        wbuf = new(SBuf);
+        rbuf = new(SBuf);
+    }
+
+    /**
+     * Add a string to the buffer.
+     * Return true on success, false on failure (e.g. buffer full).
+     */
+    bool write(const char* s)
+    {
+        bool retval = false;
+        pthread_mutex_lock(&wmutex);
+        if (s && wbuf && (wbuf->wnext < DBUF_NUM_LINES))
+        {
+            strncpy(wbuf->strings[wbuf->wnext], s, DBUF_STRING_SIZE-1);
+            wbuf->strings[wbuf->wnext][DBUF_STRING_SIZE-1] = 0;
+            wbuf->wnext++;
+            retval = true;
+        }
+        pthread_mutex_unlock(&wmutex);
+        return retval;
+    }
+    
+    /**
+     * Read next string from the buffer
+     * Return NULL, if no more string available
+     */
+    const char* read()
+    {
+        const char* ret = NULL;
+        pthread_mutex_lock(&rmutex);
+        if (rbuf && (rbuf->rnext < rbuf->wnext) && (rbuf->rnext < DBUF_NUM_LINES) )
+        {
+            ret = rbuf->strings[rbuf->rnext];
+            rbuf->rnext++;
+        }
+        pthread_mutex_unlock(&rmutex);
+        return ret;
+    }
+    
+    /**
+     * Swap read and write buffers. 
+     * Clears read buffer before to ensure that new write buffer is empty.
+     * Shall only be called by reader thread when read buffer has been 
+     * completely processed.
+     */
+    void swap()
+    {
+        SBuf* tmp;
+        pthread_mutex_lock(&rmutex);
+        rbuf->rnext = 0;
+        rbuf->wnext = 0;
+        pthread_mutex_lock(&wmutex);
+        tmp = wbuf;
+        wbuf = rbuf;
+        rbuf = tmp;
+        pthread_mutex_unlock(&wmutex);
+        pthread_mutex_unlock(&rmutex);        
+    }
+    
+};
+
+
 
 #define GNSS_INIT_MAX_RETRIES 30
 
@@ -43,6 +138,52 @@
 static volatile bool sigint = false;
 static volatile bool sigterm = false;
 static volatile bool gnss_failure = false;
+//global pointer to the double buffer
+DBuf* dbuf = 0;
+pthread_t g_logthread;
+
+/**
+ * Logger callback to add string to the double buffer.
+ */
+void dbufCb(const char* string)
+{
+    if (dbuf)
+    {
+        //TODO handle buffer full
+        dbuf->write(string);
+        printf("WBUF %s\n", string);
+    }
+}
+
+/**
+ * Background thread to write double buffer to a file.
+ * 
+ */
+void* loop_log_writer(void*)
+{
+    //TODO Open file (and close at thread end)
+    //TODO exit condition: on sigint or gnss_failure write rest of buffer
+    printf("LOGWRITER\n");
+    while (dbuf && !sigint && !sigterm)
+    {
+        const char* s = 0;
+        //process read buffer - should alway be empty
+        while (s = dbuf->read())
+        {
+            printf("BUF1 %s\n", s);
+        }
+        //swap and process previous write buffer
+        dbuf->swap();
+        while (s = dbuf->read())
+        {
+            printf("BUF2 %s\n", s);
+        }
+        printf("LOGWRITER SLEEP\n");
+        sleep(5);
+        printf("LOGWRITER WAKEUP\n");
+    }
+    printf("LOGWRITER END\n");
+}
 
 static void sigHandler (int sig, siginfo_t *siginfo, void *context)
 {
@@ -61,19 +202,19 @@ static bool registerSigHandlers()
 {
     bool is_success = true;
     
-	struct sigaction action;
- 	memset (&action, '\0', sizeof(action));
-	action.sa_sigaction = &sigHandler;
-	action.sa_flags = SA_SIGINFO;
+    struct sigaction action;
+    memset (&action, '\0', sizeof(action));
+    action.sa_sigaction = &sigHandler;
+    action.sa_flags = SA_SIGINFO;
 
-  	if (sigaction(SIGINT, &action, NULL) < 0) 
+    if (sigaction(SIGINT, &action, NULL) < 0) 
     {
-		is_success = false;
-	}
-	if (sigaction(SIGTERM, &action, NULL) < 0) 
+        is_success = false;
+    }
+    if (sigaction(SIGTERM, &action, NULL) < 0) 
     {
-		is_success = false;
-	}
+        is_success = false;
+    }
     return is_success;
 }
 
@@ -114,7 +255,7 @@ static void cbGyro(const TGyroscopeData gyroData[], uint16_t numElements)
 }
 
 
-int main()
+int main (int argc, char *argv[])
 {
     int major;
     int minor;
@@ -135,9 +276,18 @@ int main()
 #endif
     poslogSetFD(STDOUT_FILENO);
     is_poslog_init_ok = poslogInit();
+    
+    if(argv[1])
+    {
+        dbuf = new(DBuf);
+        poslogSetCB(dbufCb);
+        pthread_create(&g_logthread, NULL, loop_log_writer, NULL);
+    }
+    
     if (is_poslog_init_ok)
     {
-        poslogSetActiveSinks(POSLOG_SINK_DLT|POSLOG_SINK_FD|POSLOG_SINK_CB);
+        //poslogSetActiveSinks(POSLOG_SINK_DLT|POSLOG_SINK_FD|POSLOG_SINK_CB);
+        poslogSetActiveSinks(POSLOG_SINK_DLT|POSLOG_SINK_CB);
 
         gnssGetVersion(&major, &minor, &micro);
         sprintf(version_string, "0,0$GVGNSVER,%d,%d,%d", major, minor, micro);
@@ -235,6 +385,7 @@ int main()
         }
         poslogDestroy();
     }
+    //TODO Wait until logger thread is terminated
 #if (DLT_ENABLED)
     DLT_UNREGISTER_APP();
 #endif
