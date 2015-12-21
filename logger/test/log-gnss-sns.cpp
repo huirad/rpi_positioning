@@ -18,6 +18,11 @@
 * @licence end@
 **************************************************************************/
 
+
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+
+
 #include "poslog.h"
 #include "gnsslog.h"
 #include "snslog.h"
