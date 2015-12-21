@@ -42,7 +42,7 @@
 
 /**
  * Double buffer for log strings
- * Purpose: avoid blockingt of callback functions by I/O
+ * Purpose: avoid blocking of callback functions by I/O
  * Multiple writer threads are allowed but only on reader thread
  */
 class DBuf {
@@ -135,23 +135,34 @@ public:
 #define GNSS_INIT_MAX_RETRIES 30
 
 //global variable to control the main loop - will be set by signal handlers or status callback
-static volatile bool sigint = false;
-static volatile bool sigterm = false;
-static volatile bool gnss_failure = false;
+enum EExitCondition {
+    eExitNone = 0,
+    eExitSigInt,
+    eExitGnssFailure
+};
+
+static volatile bool g_sigterm = false;
+static volatile EExitCondition g_exit = eExitNone;
+static volatile bool g_gnss_failure = false;
 //global pointer to the double buffer
-DBuf* dbuf = 0;
+DBuf* g_dbuf = 0;
 pthread_t g_logthread;
+uint32_t g_write_failures = 0;
+FILE* g_logfile = 0;
 
 /**
  * Logger callback to add string to the double buffer.
  */
 void dbufCb(const char* string)
 {
-    if (dbuf)
+    if (g_dbuf)
     {
-        //TODO handle buffer full
-        dbuf->write(string);
-        printf("WBUF %s\n", string);
+        bool write_success = g_dbuf->write(string);
+        if (!write_success)
+        {
+            g_write_failures++;
+        }
+        //printf("WBUF %s\n", string);
     }
 }
 
@@ -161,40 +172,54 @@ void dbufCb(const char* string)
  */
 void* loop_log_writer(void*)
 {
-    //TODO Open file (and close at thread end)
-    //TODO exit condition: on sigint or gnss_failure write rest of buffer
-    printf("LOGWRITER\n");
-    while (dbuf && !sigint && !sigterm)
+    bool stop = false;
+    //printf("LOGWRITER\n");
+    while (g_dbuf && !stop && !g_sigterm)
     {
         const char* s = 0;
-        //process read buffer - should alway be empty
-        while (s = dbuf->read())
+        //process read buffer - should always be empty
+        while (s = g_dbuf->read())
         {
             printf("BUF1 %s\n", s);
         }
         //swap and process previous write buffer
-        dbuf->swap();
-        while (s = dbuf->read())
+        g_dbuf->swap();
+        while (s = g_dbuf->read())
         {
-            printf("BUF2 %s\n", s);
+            fprintf(g_logfile, "%s\n", s);
         }
-        printf("LOGWRITER SLEEP\n");
-        sleep(5);
-        printf("LOGWRITER WAKEUP\n");
+        fflush(g_logfile);
+        //printf("LOGWRITER SLEEP\n");
+        if (g_exit == eExitNone)
+        {
+            sleep(2);
+            //TODO it seems that only the main thread will be interrupted by the signal???
+            //TODO CHECK how to force faster reaction
+        }
+        else
+        {
+            stop = true;
+        }
+        //printf("LOGWRITER WAKEUP\n");
     }
-    printf("LOGWRITER END\n");
+    //printf("LOGWRITER END\n");
 }
 
 static void sigHandler (int sig, siginfo_t *siginfo, void *context)
 {
     if (sig == SIGINT) 
     {
-        sigint = true;
+        g_exit = eExitSigInt;
+        if (g_logfile)
+        {
+            //ensure that also the logger thread is interrupted
+            //pthread_kill(g_logthread, sig);  //seems not to work somehow
+        }
     }
     else 
     if (sig == SIGTERM) 
     {
-        sigterm = true;
+        g_sigterm = true;
     }
 }
 
@@ -239,7 +264,7 @@ static void cbGNSSStatus(const TGNSSStatus *status)
         poslogAddString(status_string);
         if (status->status == GNSS_STATUS_FAILURE)
         {
-            gnss_failure = true;
+            g_exit = eExitGnssFailure;
         }
     }
 }
@@ -277,17 +302,20 @@ int main (int argc, char *argv[])
     poslogSetFD(STDOUT_FILENO);
     is_poslog_init_ok = poslogInit();
     
-    if(argv[1])
-    {
-        dbuf = new(DBuf);
-        poslogSetCB(dbufCb);
-        pthread_create(&g_logthread, NULL, loop_log_writer, NULL);
-    }
-    
     if (is_poslog_init_ok)
     {
-        //poslogSetActiveSinks(POSLOG_SINK_DLT|POSLOG_SINK_FD|POSLOG_SINK_CB);
-        poslogSetActiveSinks(POSLOG_SINK_DLT|POSLOG_SINK_CB);
+
+        if(argv[1] && (g_logfile = fopen(argv[1], "a")))
+        {
+            g_dbuf = new(DBuf);
+            poslogSetCB(dbufCb);
+            pthread_create(&g_logthread, NULL, loop_log_writer, NULL);
+            poslogSetActiveSinks(POSLOG_SINK_DLT|POSLOG_SINK_CB);
+        }
+        else
+        {
+            poslogSetActiveSinks(POSLOG_SINK_DLT|POSLOG_SINK_FD|POSLOG_SINK_CB);
+        }
 
         gnssGetVersion(&major, &minor, &micro);
         sprintf(version_string, "0,0$GVGNSVER,%d,%d,%d", major, minor, micro);
@@ -324,7 +352,7 @@ int main (int argc, char *argv[])
 
         //GNSS device may be available a bit late after startup
         is_gnss_init_ok = gnssInit();
-        while (!is_gnss_init_ok && (gnss_init_tries < GNSS_INIT_MAX_RETRIES) && !sigint && !sigterm)
+        while (!is_gnss_init_ok && (gnss_init_tries < GNSS_INIT_MAX_RETRIES) && (g_exit == eExitNone) && !g_sigterm)
         {
             sleep(1);
             is_gnss_init_ok = gnssInit();
@@ -340,7 +368,7 @@ int main (int argc, char *argv[])
 
         if (is_sns_init_ok || is_gnss_init_ok)
         {
-            while(!sigint && !sigterm && !gnss_failure)
+            while(!g_sigterm && (g_exit == eExitNone))
             {
                 sleep(1);
             }
@@ -351,13 +379,13 @@ int main (int argc, char *argv[])
         }
         
         //if not interrupted by SIGTERM then we have time to cleanup
-        if (!sigterm) 
+        if (!g_sigterm) 
         {
-            if (sigint)
+            if (g_exit == eExitSigInt)
             {
                 poslogAddString("#SIGINT");
             }
-            if (gnss_failure)
+            if (g_exit == eExitGnssFailure)
             {
                 poslogAddString("#GNSS_STATUS_FAILURE");
             }
@@ -383,9 +411,15 @@ int main (int argc, char *argv[])
                 gnssDestroy();
             }
         }
+        if (g_logfile)
+        {
+            pthread_join(g_logthread, NULL);
+            fclose(g_logfile);
+            printf("#Write Failures: %"PRIu64"\n", g_write_failures);
+        }
         poslogDestroy();
     }
-    //TODO Wait until logger thread is terminated
+
 #if (DLT_ENABLED)
     DLT_UNREGISTER_APP();
 #endif

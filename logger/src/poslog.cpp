@@ -46,7 +46,25 @@ static PoslogCallback g_callback = NULL;
 #if (DLT_ENABLED)
 DLT_DECLARE_CONTEXT(poslogContext);
 #endif
-  
+
+/*
+ * Provide a system timestamp in milliseconds.
+ * @return system timestamp in milliseconds
+ */
+static uint64_t log_get_timestamp()
+{
+  struct timespec time_value;
+  if (clock_gettime(CLOCK_MONOTONIC, &time_value) != -1)
+  {
+    return (time_value.tv_sec*1000 + time_value.tv_nsec/1000000);
+  }
+  else
+  {
+    return 0xFFFFFFFFFFFFFFFF;
+  }
+}
+
+
 bool poslogInit()
 {
     pthread_mutex_lock(&mutexLog);

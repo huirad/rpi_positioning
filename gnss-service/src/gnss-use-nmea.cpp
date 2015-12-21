@@ -353,6 +353,13 @@ int open_GNSS_NMEA_device(const char* gps_device, unsigned int baudrate)
 /* 
   Done
 */
+#ifdef NMEA_PRINT_RAW
+    //http://www.chemie.fu-berlin.de/chemnet/use/info/libc/libc_12.html#SEC237
+    //http://www.chemie.fu-berlin.de/chemnet/use/info/libc/libc_27.html#SEC465
+    //http://www.chemie.fu-berlin.de/chemnet/use/info/libc/libc_27.html#SEC468
+    //printf("MAX_CANON: %d\n", fpathconf(fd, _PC_MAX_CANON));
+    //printf("MAX_INPUT: %d\n", fpathconf(fd, _PC_MAX_INPUT));
+#endif
     //LOG_DEBUG(gContext, "OPEN successful %d\n", fd);
     return fd;
 }
