@@ -14,8 +14,10 @@ class GVGNSTIM:
     Invalid data are set to None
     """
 
-    GNSS_TIME_TIME_VALID = 0x00000001   #Validity bit for field TGNSSTime fields hour, minute, second, ms.
-    GNSS_TIME_DATE_VALID = 0x00000002   #Validity bit for field TGNSSTime fields year, month, day.
+    GNSS_TIME_TIME_VALID    = 0x00000001   #Validity bit for field TGNSSTime fields hour, minute, second, ms.
+    GNSS_TIME_DATE_VALID    = 0x00000002   #Validity bit for field TGNSSTime fields year, month, day.
+    GNSS_TIME_SCALE_VALID   = 0x00000004   #Validity bit for field TGNSSTime field scale.
+    GNSS_TIME_LEAPSEC_VALID = 0x00000008   #Validity bit for field TGNSSTime field leapSeconds.
 
     def __init__(self):
         self.valid = False
@@ -27,15 +29,18 @@ class GVGNSTIM:
         self.minute = None
         self.second = None
         self.ms = None
+        self.scale = None
+        self.leapSeconds = None
         
     def from_logstring(self, logstring):
         self.__init__()
         logstring = logstring.rstrip() #remove \r\n at end of string
         fields = logstring.split(",")
-        if (len(fields) == 12) and (fields[2] == "$GVGNSTIM"):
+        if (len(fields) == 14) and (fields[2] == "$GVGNSTIM"):
             #print(logstring)
+            #print(fields)
             self.timestamp = int(fields[3])
-            self.validity_bits = int(fields[11],16)
+            self.validity_bits = int(fields[13],16)
             if self.validity_bits & GVGNSTIM.GNSS_TIME_DATE_VALID:
                 self.year = int(fields[4])
                 self.month = int(fields[5])
@@ -45,6 +50,10 @@ class GVGNSTIM:
                 self.minute = int(fields[8])
                 self.second = int(fields[9])
                 self.ms = int(fields[10])
+            if self.validity_bits & GVGNSTIM.GNSS_TIME_SCALE_VALID:
+                self.scale = int(fields[11])
+            if self.validity_bits & GVGNSTIM.GNSS_TIME_LEAPSEC_VALID:
+                self.leapSeconds = int(fields[12])                
             self.valid = True
         return self.valid
 
@@ -203,9 +212,9 @@ class GVSNSACC:
             self.valid = True
         return self.valid
 
-#FORMAT timestamp,countdown,$GVSNSGYRO,timestamp,yawRate,pitchRate,rollRate,temperature,validityBits
-class GVSNSGYRO:
-    """Encapsulate a GVSNSGYRO sentence.
+#FORMAT timestamp,countdown,$GVSNSGYR,timestamp,yawRate,pitchRate,rollRate,temperature,validityBits
+class GVSNSGYR:
+    """Encapsulate a GVSNSGYR sentence.
     
     The attributes correspond to the fields in the corresponding
     C data structure TGyroscopeData from header file gyroscope.h
@@ -229,17 +238,17 @@ class GVSNSGYRO:
         self.__init__()
         logstring = logstring.rstrip() #remove \r\n at end of string
         fields = logstring.split(",")
-        if (len(fields) == 9) and (fields[2] == "$GVSNSGYRO"):
+        if (len(fields) == 9) and (fields[2] == "$GVSNSGYR"):
             #print(logstring)
             self.timestamp = int(fields[3])
             self.validity_bits = int(fields[8],16)
-            if self.validity_bits & GVSNSGYRO.GYROSCOPE_YAWRATE_VALID:
+            if self.validity_bits & GVSNSGYR.GYROSCOPE_YAWRATE_VALID:
                 self.yawRate = float(fields[4])
-            if self.validity_bits & GVSNSGYRO.GYROSCOPE_PITCHRATE_VALID:
+            if self.validity_bits & GVSNSGYR.GYROSCOPE_PITCHRATE_VALID:
                 self.pitchRate = float(fields[5])
-            if self.validity_bits & GVSNSGYRO.GYROSCOPE_ROLLRATE_VALID:
+            if self.validity_bits & GVSNSGYR.GYROSCOPE_ROLLRATE_VALID:
                 self.rollRate = float(fields[6])
-            if self.validity_bits & GVSNSGYRO.GYROSCOPE_TEMPERATURE_VALID:
+            if self.validity_bits & GVSNSGYR.GYROSCOPE_TEMPERATURE_VALID:
                 self.temperature = float(fields[7])
             self.valid = True
         return self.valid
@@ -274,7 +283,7 @@ with open (filename, "r", encoding='latin_1') as f:  #"r" is default, so it coul
     tim = GVGNSTIM()
     pos = GVGNSPOS()
     acc = GVSNSACC()
-    gyr = GVSNSGYRO()
+    gyr = GVSNSGYR()
   
     for line in f:
         line = line.rstrip() #remove \r\n at end of string
@@ -285,7 +294,7 @@ with open (filename, "r", encoding='latin_1') as f:  #"r" is default, so it coul
         elif "$GVSNSACC" in line:
             if acc.from_logstring(line):
                 pass
-        elif "$GVSNSGYRO" in line:
+        elif "$GVSNSGYR" in line:
             if gyr.from_logstring(line):
                 pass
         elif "$GVGNSTIM" in line:
@@ -300,6 +309,7 @@ with open (filename, "r", encoding='latin_1') as f:  #"r" is default, so it coul
                     if pos.altitudeMSL:
                         print('<ele>{0}</ele>'.format(pos.altitudeMSL))
                     if tim.valid and tim.timestamp == pos.timestamp:
+                        #print(tim.year, tim.month, tim.day, tim.hour, tim.minute, tim.second, tim.valid)
                         print('<time>{0:04d}-{1:02d}-{2:02d}T{3:02d}:{4:02d}:{5:02d}Z</time>'.format(
                             #tim.year, tim.month+1, tim.day, 44, 55, 66))
                             tim.year, tim.month+1, tim.day, tim.hour, tim.minute, tim.second))
@@ -312,6 +322,8 @@ with open (filename, "r", encoding='latin_1') as f:  #"r" is default, so it coul
                         print('<g4a:y>{0}</g4a:y>'.format(acc.y))
                     if acc.z:
                         print('<g4a:z>{0}</g4a:z>'.format(acc.z))
+                    if acc.temperature:
+                        print('<g4a:t>{0}</g4a:t>'.format(acc.temperature))
                     if gyr.yawRate:
                         print('<g4g:Y>{0}</g4g:Y>'.format(gyr.yawRate))
                     if gyr.pitchRate:
