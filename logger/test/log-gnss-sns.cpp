@@ -284,6 +284,74 @@ static void cbGyro(const TGyroscopeData gyroData[], uint16_t numElements)
     gyroscopeDataLog(snslogGetTimestamp(), gyroData, numElements);
 }
 
+#define UDP_LOG
+#ifdef UDP_LOG
+#include<stdlib.h> //exit(0);
+#include<arpa/inet.h>
+#include<sys/socket.h>
+#define UDP_BUFLEN  128 //Max length of buffer
+#define UDP_PORT 5701   //The port on which to listen for incoming data
+#define UDP_LOGLEN  256
+
+pthread_t g_udpthread;
+
+void* loop_udp_log(void*)
+{
+    struct sockaddr_in si_me, si_other;
+    int s; 
+    socklen_t slen = sizeof(si_other);
+    ssize_t recv_len;
+    char buf[UDP_BUFLEN];
+    char log_string[UDP_LOGLEN];
+    bool ok = true;
+    
+    //create a UDP socket
+    if ((s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+    {
+        ok = false;
+    }
+   
+    if (ok)
+    {
+        // zero out the structure
+        memset((char *) &si_me, 0, sizeof(si_me));
+        si_me.sin_family = AF_INET;
+        si_me.sin_port = htons(UDP_PORT);
+        si_me.sin_addr.s_addr = htonl(INADDR_ANY);
+    
+        //bind socket to port
+        if( bind(s , (struct sockaddr*)&si_me, sizeof(si_me) ) == -1)
+        {
+            ok = false;
+        }
+    }
+    
+    //keep listening for data
+    while(ok)
+    {
+        //try to receive some data, this is a blocking call
+        if ((recv_len = recvfrom(s, buf, UDP_BUFLEN, 0, (struct sockaddr *) &si_other, &slen)) == -1)
+        {
+            ok = false;
+        }
+        else
+        {
+            snprintf(log_string, UDP_LOGLEN-1, "%"PRIu64",0,$UDP,%s,%d,%s", 
+                snslogGetTimestamp(),
+                inet_ntoa(si_other.sin_addr), 
+                ntohs(si_other.sin_port),
+                buf
+            );
+            log_string[UDP_LOGLEN-1] = 0; //ensure that string is null-terminated
+            poslogAddString(log_string);
+        }
+    }
+    close(s);
+}
+#endif
+
+
+
 
 int main (int argc, char *argv[])
 {
@@ -329,6 +397,9 @@ int main (int argc, char *argv[])
         sprintf(version_string, "0,0$GVSNSVER,%d,%d,%d", major, minor, micro);
         poslogAddString(version_string);
 
+#ifdef UDP_LOG        
+        pthread_create(&g_udpthread, NULL, loop_udp_log, NULL);        
+#endif        
         is_sns_init_ok = snsInit();
         if (is_sns_init_ok)
         {
