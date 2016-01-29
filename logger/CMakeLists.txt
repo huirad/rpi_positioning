@@ -31,8 +31,8 @@ option(WITH_GPSD
 option(WITH_NMEA
     "Use NMEA as source of GPS data" OFF)
     
-option(WITH_MPU6050
-    "Use MPU6050 as source of gyro/acceleration data" OFF) 
+option(WITH_IMU
+    "Use a 6DOF IMU further specified by -DIMU_TYPE as source of gyro/acceleration data" OFF) 
     
 option(WITH_REPLAYER
     "Use REPLAYER as source of GPS data" ON)
