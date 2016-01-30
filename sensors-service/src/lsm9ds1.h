@@ -42,22 +42,26 @@ extern "C" {
 /** Possible I2C device addresses of the LSM9DS1
   * 0x68 is the default address
   */
-#define LSM9DS1_ADDR_1 0x68
-#define LSM9DS1_ADDR_2 0x69
+#define LSM9DS1_ADDR_1 0x6A
+#define LSM9DS1_ADDR_2 0x6B
  
-/** Digital low pass filter settings
-  * See the LSM9DS1 data sheet for details
+/** Output data rate settings
+  * See the LSM9DS1 data sheet section on CTRL_REG1_G for details
   * http://www.st.com/web/en/resource/technical/document/datasheet/DM00103319.pdf
+  * 
+  * The HPF will be not enabled. 
+  * Therefore the LPF2 will be not used and the LPF1 bandwidth directly depends on the ODR
   */ 
-enum ELSM9DS1LowPassFilterBandwidth
+enum ELSM9DS1OutputDataRate
 {
-    LSM9DS1_DLPF_256HZ = 0x00,    //Gyro: 256Hz,  Accel: 260Hz
-    LSM9DS1_DLPF_188HZ = 0x01,    //Gyro: 188Hz,  Accel: 184Hz
-    LSM9DS1_DLPF_98HZ  = 0x02,    //Gyro:  98Hz,  Accel:  94Hz
-    LSM9DS1_DLPF_42HZ  = 0x03,    //Gyro:  42Hz,  Accel:  44Hz
-    LSM9DS1_DLPF_20HZ  = 0x04,    //Gyro:  20Hz,  Accel:  21Hz
-    LSM9DS1_DLPF_10HZ  = 0x05,    //Gyro:  10Hz,  Accel:  10Hz
-    LSM9DS1_DLPF_5HZ   = 0x06     //Gyro:   5Hz,  Accel:   5Hz
+    LSM9DS1_ODR_PWR_DWN     = 0x00,     //Gyro+Accel switched off
+    LSM9DS1_ODR_14_9HZ      = 0x01,     //ODR:  14.9 Hz,  LPF1 CutOff   5Hz
+    LSM9DS1_ODR_59_5HZ      = 0x02,     //ODR:  59.5 Hz,  LPF1 CutOff  19Hz
+    LSM9DS1_ODR_119HZ       = 0x03,     //ODR: 119   Hz,  LPF1 CutOff  38Hz
+    LSM9DS1_ODR_238HZ       = 0x04,     //ODR: 238   Hz,  LPF1 CutOff  76Hz
+    LSM9DS1_ODR_476HZ       = 0x05,     //ODR: 476   Hz,  LPF1 CutOff 100Hz
+    LSM9DS1_ODR_952HZ       = 0x06,     //ODR: 952   Hz,  LPF1 CutOff 100Hz    
+    
 };
 
  
@@ -67,7 +71,7 @@ enum ELSM9DS1LowPassFilterBandwidth
   
 /**
  * Container for quantities which can be expressed as 3 dimensional vector.
- * The axis system is to be assumed cartesian and right-handed
+ * The axis system is to be assumed cartesian and right-hded
  * Measurement units depend on type of data:
  *   For accelerometer measurements, the unit is g
  *   For gyro measurements, the unit is degrees per seconds (deg/s)
@@ -87,7 +91,7 @@ typedef struct
  * @param bandwidth bandwidth of the digital low pass filter
  * @return true on success.
  */
-bool lsm9ds1_init(const char* i2c_device = LSM9DS1_I2C_DEV_DEFAULT, uint8_t i2c_addr=LSM9DS1_ADDR_1, ELSM9DS1LowPassFilterBandwidth bandwidth=LSM9DS1_DLPF_256HZ); 
+bool lsm9ds1_init(const char* i2c_device = LSM9DS1_I2C_DEV_DEFAULT, uint8_t i2c_addr=LSM9DS1_ADDR_1, ELSM9DS1OutputDataRate odr=LSM9DS1_ODR_119HZ); 
 
 /**
  * Release the LSM9DS1 access.

@@ -47,43 +47,43 @@
 /** LSM9DS1 register addresses
  *  Accelerometer, temperature, and gyro readings are each 16bit signed integers
  *  stored in two consecutive registeres as 2's complement value
- *  The registers MPU6050_REG_ACCEL_XOUT ... MPU6050_REG_GYRO_ZOUT
- *  each contain the high low of the 16 bit. The high byte is in the next register
- *  --> byte order is different from MPU6050!!!
+ * The by order can be selected by CTRL_REG8
+ *  By default, the registers LSM9DS1_REG_OUT_TEMP ... LSM9DS1_REG_ACCEL_ZOUT
+ *  each contain the low byte of the 16 bit. The high byte is in the next register
+ *  --> byte order is different from MPU6050.
  *  Favourably, the accelerometer, temperature, and gyro registers ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
  *  are clustered in a fashion that is optimized for block reads
  */
 
-#define LSM9DS1_REG_TEMP_OUT   0x15     //int16_t - 12bit resolution
-#define LSM9DS1_REG_GYRO_XOUT  0x18     //int16_t
-#define LSM9DS1_REG_GYRO_YOUT  0x1A     //int16_t
-#define LSM9DS1_REG_GYRO_ZOUT  0x1C     //int16_t
-#define LSM9DS1_REG_ACCEL_XOUT 0x28     //int16_t
-#define LSM9DS1_REG_ACCEL_YOUT 0x2A     //int16_t
-#define LSM9DS1_REG_ACCEL_ZOUT 0x2C     //int16_t
+#define LSM9DS1_REG_OUT_TEMP        0x15    //int16_t - 12bit resolution
+#define LSM9DS1_REG_OUT_X_G         0x18    //int16_t
+#define LSM9DS1_REG_OUT_Y_G         0x1A    //int16_t
+#define LSM9DS1_REG_OUT_Z_G         0x1C    //int16_t
+#define LSM9DS1_REG_OUT_X_XL        0x28    //int16_t
+#define LSM9DS1_REG_OUT_Y_XL        0x2A    //int16_t
+#define LSM9DS1_REG_OUT_Z_XL        0x2C    /int16_t
 
-
-
-#define MPU6050_REG_CONFIG     0x1A
-
-#define MPU6050_REG_PWR_MGMT_1 0x6B
-#define LSM9DS1_REG_WHO_AM_I   0x0F     //MPU6050 used different register 0x75
+#define LSM9DS1_REG_CTRL_REG1_G     0x10
+#define LSM9DS1_REG_ORIENT_CFG_G    0x13
+#define LSM9DS1_REG_CTRL_REG8       0x22
+#define LSM9DS1_REG_WHO_AM_I        0x0F     //MPU6050 used different register 0x75
 
  /** LSM9DS1 register values
   */
-#define MPU6050_PWR_MGMT_1__SLEEP  0x40
-#define MPU6050_PWR_MGMT_1__WAKEUP 0x00
-#define LSM9DS1_WHO_AM_I           0x68 //MPU6050 used same value 0x68
+#define LSM9DS1_CTRL_REG8__BOOT     0x80
+#define LSM9DS1_WHO_AM_I            0x68 //MPU6050 used same value 0x68
 
  /** LSM9DS1 conversion factors
   * Accelerometer scale at default +-2g range: 16384 LSB/g
-  * Temperature in degrees C = (TEMP_OUT Register Value as a signed quantity)/340 + 36.53
-  * Gyroscope scale at default +-250 deg/s range: 131 LSB/(deg/s)
+  *    data sheet: 0.061 mg/LSB
+  * Temperature in degrees C = (TEMP_OUT Register Value as a signed quantity)/16
+  *    data sheet: 16 LSB/°C
+  * Gyroscope scale at default +-245 deg/s range: 114 LSB/(deg/s)
+  *    data sheet: 8.75 mdps/LSB
   */
-#define MPU6050_ACCEL_SCALE  16384.0
-#define MPU6050_TEMP_SCALE   340.0
-#define MPU6050_TEMP_BIAS    36.53
-#define MPU6050_GYRO_SCALE   131.0
+#define LSM9DS1_ACCEL_SCALE  16384.0
+#define LSM9DS1_TEMP_SCALE   16.0
+#define LSM9DS1_GYRO_SCALE   114.3
 
 
 /** ===================================================================
@@ -328,40 +328,42 @@ static bool lsm9ds1_wakeup()
 {
     uint8_t whoami;
     bool result = true;
-    //Wake up the MPU6050 as it starts in sleep mode
-    result = i2c_write_uint8(MPU6050_REG_PWR_MGMT_1, MPU6050_PWR_MGMT_1__WAKEUP);
+    //Reset the LSM9DS1
+    result = i2c_write_uint8(LSM9DS1_REG_CTRL_REG8, LSM9DS1_CTRL_REG8__BOOT);
+    //wait 100ms to guarantee that sensor has rebooted at next read attempt
+    usleep(100000);
     //Test the WHO_AM_I register
     if (result)
     {
-        result = i2c_read_uint8(MPU6050_REG_WHO_AM_I, &whoami);
-        result = result && (MPU6050_WHO_AM_I == whoami) ;
+        result = i2c_read_uint8(LSM9DS1_REG_WHO_AM_I, &whoami);
+        result = result && (LSM9DS1_WHO_AM_I == whoami) ;
     }
-    //wait 10ms to guarantee that sensor data is available at next read attempt
-    usleep(10000);
     return result;
 }
 
-static bool lsm9ds1_setDLPF(ELSM9DS1LowPassFilterBandwidth bandwidth)
+static bool lsm9ds1_setODR(ELSM9DS1OutputDataRate odr)
 {
     bool result = true;
-    result = i2c_write_uint8(MPU6050_REG_CONFIG, bandwidth);
+    result = i2c_write_uint8(LSM9DS1_REG_CTRL_REG1_G, odr);
+    //wait 10ms to guarantee that sensor data is available at next read attempt
+    usleep(10000);
     return result;
 }
 
 
 static float conv_accel(int16_t raw_accel)
 {
-    return raw_accel / MPU6050_ACCEL_SCALE;
+    return raw_accel / LSM9DS1_ACCEL_SCALE;
 }
 
 static float conv_temp(int16_t raw_temp)
 {
-    return raw_temp / MPU6050_TEMP_SCALE + MPU6050_TEMP_BIAS;
+    return raw_temp / LSM9DS1_TEMP_SCALE;
 }
 
 static float conv_gyro(int16_t raw_gyro)
 {
-    return raw_gyro / MPU6050_GYRO_SCALE;
+    return raw_gyro / LSM9DS1_GYRO_SCALE;
 }
 
 static uint64_t sleep_until(uint64_t wakeup)
@@ -468,18 +470,18 @@ static void* lsm9ds1_reader_thread(void* param)
  * 4.) FUNCTIONS IMPLEMENTING THE PUBLIC INTERFACE OF lsm9ds1.h
  */
 
-bool lsm9ds1_init(const char* i2c_device, uint8_t i2c_addr, ELSM9DS1LowPassFilterBandwidth bandwidth)
+bool lsm9ds1_init(const char* i2c_device, uint8_t i2c_addr, ELSM9DS1OutputDataRate odr)
 {
     bool result = false;
     result = i2c_lsm9ds1_init(i2c_device, i2c_addr);
     if (result)
     {
-        result = lsm9ds1_setDLPF(bandwidth);
+        result = lsm9ds1_wakeup();
     }
     if (result)
     {
-        result = lsm9ds1_wakeup();
-    }
+        result = lsm9ds1_setODR(odr);
+    }    
     return result;
 }
 
@@ -523,7 +525,7 @@ bool lsm9ds1_read_accel_gyro(TLSM9DS1Vector3D* acceleration, TLSM9DS1Vector3D* g
 
     if (i2c_read_block(start_reg, block+start, num_bytes))
     {
-        if (acceleration != NULL)
+        if (acceleration)
         {
             value = (((int16_t)block[0]) << 8) | block[1];
             acceleration->x = conv_accel(value);
@@ -532,12 +534,12 @@ bool lsm9ds1_read_accel_gyro(TLSM9DS1Vector3D* acceleration, TLSM9DS1Vector3D* g
             value = (((int16_t)block[4]) << 8) | block[5];
             acceleration->z = conv_accel(value);
         }
-        if (temperature != NULL)
+        if (temperature)
         {
             value = (((int16_t)block[6]) << 8) | block[7];
             *temperature = conv_temp(value);
         }
-        if (gyro_angular_rate != NULL)
+        if (gyro_angular_rate)
         {
             value = (((int16_t)block[8]) << 8) | block[9];
             gyro_angular_rate->x = conv_gyro(value);

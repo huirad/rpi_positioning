@@ -330,12 +330,13 @@ void* loop_udp_log(void*)
     while(ok)
     {
         //try to receive some data, this is a blocking call
-        if ((recv_len = recvfrom(s, buf, UDP_BUFLEN, 0, (struct sockaddr *) &si_other, &slen)) == -1)
+        if ((recv_len = recvfrom(s, buf, UDP_BUFLEN-1, 0, (struct sockaddr *) &si_other, &slen)) == -1)
         {
             ok = false;
         }
         else
         {
+            buf[recv_len]=0;
             snprintf(log_string, UDP_LOGLEN-1, "%"PRIu64",0,$UDP,%s,%d,%s", 
                 snslogGetTimestamp(),
                 inet_ntoa(si_other.sin_addr), 

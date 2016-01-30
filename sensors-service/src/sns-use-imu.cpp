@@ -38,10 +38,11 @@ DLT_DECLARE_CONTEXT(gContext);
 
 //configuration parameters - may be set from outside
 
-//configure how to address the mpu6050
-#ifndef MPU6050_I2C_DEV
-#define MPU6050_I2C_DEV MPU6050_I2C_DEV_1
+//configure how to address the IMU
+#ifndef IMU_I2C_DEV
+#define IMU_I2C_DEV MPU6050_I2C_DEV_1
 #endif
+
 
 //sample interval (ms)
 #ifndef IMU_SAMPLE_INTERVAL
@@ -159,7 +160,7 @@ bool snsGyroscopeInit()
         if (is_ok)
         {
             //DLPF cut-off 42Hz fits best to 100Hz sample rate
-            is_ok = mpu6050_init(MPU6050_I2C_DEV, MPU6050_ADDR_1, MPU6050_DLPF_42HZ);
+            is_ok = mpu6050_init(IMU_I2C_DEV, MPU6050_ADDR_1, MPU6050_DLPF_42HZ);
         }
         if (is_ok)
         {    
@@ -172,8 +173,8 @@ bool snsGyroscopeInit()
 #elif defined(IMU_TYPE_LSM9DS1)
         if (is_ok)
         {
-            //DLPF cut-off 42Hz fits best to 100Hz sample rate
-            is_ok = lsm9ds1_init(MPU6050_I2C_DEV, MPU6050_ADDR_1, MPU6050_DLPF_42HZ);
+            //ODR 119Hz with LPF1 cut-off 38Hz fits best to 100Hz sample rate
+            is_ok = lsm9ds1_init(IMU_I2C_DEV, LSM9DS1_ADDR_1, LSM9DS1_ODR_119HZ);
         }
         if (is_ok)
         {    
