@@ -48,26 +48,32 @@
  *  Accelerometer, temperature, and gyro readings are each 16bit signed integers
  *  stored in two consecutive registeres as 2's complement value
  *  The registers MPU6050_REG_ACCEL_XOUT ... MPU6050_REG_GYRO_ZOUT
- *  each contain the high byte of the 16 bit. The low by is in the next register
- *  Favourably, the accelerometer, temperature, and gyro registers
+ *  each contain the high low of the 16 bit. The high byte is in the next register
+ *  --> byte order is different from MPU6050!!!
+ *  Favourably, the accelerometer, temperature, and gyro registers ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
  *  are clustered in a fashion that is optimized for block reads
  */
+
+#define LSM9DS1_REG_TEMP_OUT   0x15     //int16_t - 12bit resolution
+#define LSM9DS1_REG_GYRO_XOUT  0x18     //int16_t
+#define LSM9DS1_REG_GYRO_YOUT  0x1A     //int16_t
+#define LSM9DS1_REG_GYRO_ZOUT  0x1C     //int16_t
+#define LSM9DS1_REG_ACCEL_XOUT 0x28     //int16_t
+#define LSM9DS1_REG_ACCEL_YOUT 0x2A     //int16_t
+#define LSM9DS1_REG_ACCEL_ZOUT 0x2C     //int16_t
+
+
+
 #define MPU6050_REG_CONFIG     0x1A
-#define MPU6050_REG_ACCEL_XOUT 0x3B
-#define MPU6050_REG_ACCEL_YOUT 0x3D
-#define MPU6050_REG_ACCEL_ZOUT 0x3F
-#define MPU6050_REG_TEMP_OUT   0x41
-#define MPU6050_REG_GYRO_XOUT  0x43
-#define MPU6050_REG_GYRO_YOUT  0x45
-#define MPU6050_REG_GYRO_ZOUT  0x47
+
 #define MPU6050_REG_PWR_MGMT_1 0x6B
-#define MPU6050_REG_WHO_AM_I   0x75
+#define LSM9DS1_REG_WHO_AM_I   0x0F     //MPU6050 used different register 0x75
 
  /** LSM9DS1 register values
   */
 #define MPU6050_PWR_MGMT_1__SLEEP  0x40
 #define MPU6050_PWR_MGMT_1__WAKEUP 0x00
-#define MPU6050_WHO_AM_I           0x68
+#define LSM9DS1_WHO_AM_I           0x68 //MPU6050 used same value 0x68
 
  /** LSM9DS1 conversion factors
   * Accelerometer scale at default +-2g range: 16384 LSB/g
@@ -89,25 +95,25 @@
  * Functions starting with conv_ convert the raw data to common measurement units
  */
 
-/** Global file descriptor - must be initialized by calling i2c_mpu6050_init()
+/** Global file descriptor - must be initialized by calling i2c_lsm9ds1_init()
  */
 static int _i2c_fd = -1;
-/** Global device address - must be initialized by calling i2c_mpu6050_init()
+/** Global device address - must be initialized by calling i2c_lsm9ds1_init()
  */
 static uint8_t _i2c_addr = 0;
 
 /** LSM9DS1 reader thread control
  */
-volatile int _lsm9ds1_reader_loop = 0;
-pthread_t _reader_thread;
-uint64_t _sample_interval;
-uint16_t _num_samples;
-bool _average;
+static volatile int _lsm9ds1_reader_loop = 0;
+static pthread_t _reader_thread;
+static uint64_t _sample_interval;
+static uint16_t _num_samples;
+static bool _average;
 
 /** Callback function and associated mutex
  */
-pthread_mutex_t _mutex_cb  = PTHREAD_MUTEX_INITIALIZER;
-volatile LSM9DS1Callback _cb = 0;
+static pthread_mutex_t _mutex_cb  = PTHREAD_MUTEX_INITIALIZER;
+static volatile LSM9DS1Callback _cb = 0;
 
 /** Write a 8 bit unsigned integer to a register
  */
@@ -335,7 +341,7 @@ static bool lsm9ds1_wakeup()
     return result;
 }
 
-static bool lsm9ds1_setDLPF(EMPU6050LowPassFilterBandwidth bandwidth)
+static bool lsm9ds1_setDLPF(ELSM9DS1LowPassFilterBandwidth bandwidth)
 {
     bool result = true;
     result = i2c_write_uint8(MPU6050_REG_CONFIG, bandwidth);
@@ -597,7 +603,7 @@ bool lsm9ds1_start_reader_thread(uint64_t sample_interval, uint16_t num_samples,
 
     _lsm9ds1_reader_loop = 1;
 
-    int res = pthread_create (&_reader_thread, NULL, mpu6050_reader_thread, NULL);
+    int res = pthread_create (&_reader_thread, NULL, lsm9ds1_reader_thread, NULL);
 
     if (res != 0)
     {

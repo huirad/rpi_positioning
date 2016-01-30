@@ -98,16 +98,16 @@ static uint8_t _i2c_addr = 0;
 
 /** MPU6050 reader thread control
  */
-volatile int _mpu6050_reader_loop = 0;
-pthread_t _reader_thread;
-uint64_t _sample_interval;
-uint16_t _num_samples;
-bool _average;
+static volatile int _mpu6050_reader_loop = 0;
+static pthread_t _reader_thread;
+static uint64_t _sample_interval;
+static uint16_t _num_samples;
+static bool _average;
 
 /** Callback function and associated mutex
  */
-pthread_mutex_t _mutex_cb  = PTHREAD_MUTEX_INITIALIZER;
-volatile MPU6050Callback _cb = 0;
+static pthread_mutex_t _mutex_cb  = PTHREAD_MUTEX_INITIALIZER;
+static volatile MPU6050Callback _cb = 0;
 
 /** Write a 8 bit unsigned integer to a register
  */

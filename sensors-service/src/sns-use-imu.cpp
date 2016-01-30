@@ -32,6 +32,7 @@
 #include "globals.h"
 #include "log.h"
 #include "mpu6050.h"
+#include "lsm9ds1.h"
 
 DLT_DECLARE_CONTEXT(gContext);
 
@@ -43,24 +44,53 @@ DLT_DECLARE_CONTEXT(gContext);
 #endif
 
 //sample interval (ms)
-#ifndef MPU6050_SAMPLE_INTERVAL
-#define MPU6050_SAMPLE_INTERVAL 10
+#ifndef IMU_SAMPLE_INTERVAL
+#define IMU_SAMPLE_INTERVAL 10
 #endif
 //number of samples per callback
-#ifndef MPU6050_NUM_SAMPLES
-#define MPU6050_NUM_SAMPLES 10
+#ifndef IMU_NUM_SAMPLES
+#define IMU_NUM_SAMPLES 10
 #endif
 //control whether samples are averaged for the callback
-#ifndef MPU6050_AVG_SAMPLES
-#define MPU6050_AVG_SAMPLES true
+#ifndef IMU_AVG_SAMPLES
+#define IMU_AVG_SAMPLES true
 #endif
 
 static volatile bool is_initialized = false;
 
 static void mpu6050_cb(const TMPU6050Vector3D acceleration[], const TMPU6050Vector3D gyro_angular_rate[], const float temperature[], const uint64_t timestamp[], const uint16_t num_elements)
 {
-    TAccelerationData accel[MPU6050_NUM_SAMPLES] = {0};
-    TGyroscopeData gyro[MPU6050_NUM_SAMPLES] = {0};
+    TAccelerationData accel[IMU_NUM_SAMPLES] = {0};
+    TGyroscopeData gyro[IMU_NUM_SAMPLES] = {0};
+    
+    for (uint16_t i=0; i<num_elements; i++)
+    {
+        accel[i].timestamp = timestamp[i];
+        accel[i].x = acceleration[i].x*MPU6050_UNIT_1_G;
+        accel[i].y = acceleration[i].y*MPU6050_UNIT_1_G;
+        accel[i].z = acceleration[i].z*MPU6050_UNIT_1_G;
+        accel[i].temperature = temperature[i];
+        accel[i].validityBits = ACCELERATION_X_VALID | ACCELERATION_Y_VALID |
+                                ACCELERATION_Z_VALID | ACCELERATION_TEMPERATURE_VALID;
+
+        gyro[i].timestamp = timestamp[i];
+        gyro[i].yawRate = gyro_angular_rate[i].z;
+        gyro[i].pitchRate = gyro_angular_rate[i].y;
+        gyro[i].rollRate = gyro_angular_rate[i].x;
+        gyro[i].temperature = temperature[i];
+        gyro[i].validityBits = GYROSCOPE_YAWRATE_VALID | GYROSCOPE_PITCHRATE_VALID |
+                               GYROSCOPE_ROLLRATE_VALID | GYROSCOPE_TEMPERATURE_VALID;
+                             
+    }
+    updateAccelerationData(accel, num_elements);
+    updateGyroscopeData(gyro, num_elements);
+    
+}
+
+static void lsm9ds1_cb(const TMPU6050Vector3D acceleration[], const TMPU6050Vector3D gyro_angular_rate[], const float temperature[], const uint64_t timestamp[], const uint16_t num_elements)
+{
+    TAccelerationData accel[IMU_NUM_SAMPLES] = {0};
+    TGyroscopeData gyro[IMU_NUM_SAMPLES] = {0};
     
     for (uint16_t i=0; i<num_elements; i++)
     {
@@ -125,6 +155,7 @@ bool snsGyroscopeInit()
     else
     {
         is_ok = iGyroscopeInit();
+#if defined(IMU_TYPE_MPU6050)
         if (is_ok)
         {
             //DLPF cut-off 42Hz fits best to 100Hz sample rate
@@ -136,8 +167,25 @@ bool snsGyroscopeInit()
         }        
         if (is_ok)
         {
-            is_ok = mpu6050_start_reader_thread(MPU6050_SAMPLE_INTERVAL, MPU6050_NUM_SAMPLES, MPU6050_AVG_SAMPLES);
+            is_ok = mpu6050_start_reader_thread(IMU_SAMPLE_INTERVAL, IMU_NUM_SAMPLES, IMU_AVG_SAMPLES);
         }
+#elif defined(IMU_TYPE_LSM9DS1)
+        if (is_ok)
+        {
+            //DLPF cut-off 42Hz fits best to 100Hz sample rate
+            is_ok = lsm9ds1_init(MPU6050_I2C_DEV, MPU6050_ADDR_1, MPU6050_DLPF_42HZ);
+        }
+        if (is_ok)
+        {    
+            is_ok = lsm9ds1_register_callback(&lsm9ds1_cb);
+        }        
+        if (is_ok)
+        {
+            is_ok = lsm9ds1_start_reader_thread(IMU_SAMPLE_INTERVAL, IMU_NUM_SAMPLES, IMU_AVG_SAMPLES);
+        }
+#else
+        is_ok = false;
+#endif        
         is_initialized = is_ok;
     }
     return is_ok;
@@ -154,8 +202,13 @@ bool snsGyroscopeDestroy()
     {
         is_initialized = false;
         bool is_ok = mpu6050_stop_reader_thread();
+#if defined(IMU_TYPE_MPU6050)        
         is_ok = is_ok && mpu6050_deregister_callback(&mpu6050_cb);
         is_ok = is_ok && mpu6050_deinit();
+#elif defined(IMU_TYPE_LSM9DS1)
+        is_ok = is_ok && lsm9ds1_deregister_callback(&lsm9ds1_cb);
+        is_ok = is_ok && lsm9ds1_deinit();
+#endif        
         is_ok = is_ok && iGyroscopeDestroy();
     }
     return is_ok;    
