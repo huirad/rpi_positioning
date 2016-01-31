@@ -71,7 +71,7 @@
 
  /** LSM9DS1 register values
   */
-#define LSM9DS1_CTRL_REG8__BOOT     0x80
+#define LSM9DS1_CTRL_REG8__INIT     0xC    //BOOT|BDU|IF_ADD_INC
 #define LSM9DS1_WHO_AM_I            0x68    //MPU6050 used same value 0x68
 
  /** LSM9DS1 conversion factors
@@ -262,12 +262,12 @@ static bool i2c_lsm9ds1_deinit()
     return result;
 }
 
-static bool lsm9ds1_wakeup()
+static bool lsm9ds1_config()
 {
     uint8_t whoami;
     bool result = true;
     //Reset the LSM9DS1
-    result = i2c_write_uint8(LSM9DS1_REG_CTRL_REG8, LSM9DS1_CTRL_REG8__BOOT);
+    result = i2c_write_uint8(LSM9DS1_REG_CTRL_REG8, LSM9DS1_CTRL_REG8__INIT);
     //wait 100ms to guarantee that sensor has rebooted at next read attempt
     usleep(100000);
     //Test the WHO_AM_I register
@@ -414,11 +414,11 @@ bool lsm9ds1_init(const char* i2c_device, uint8_t i2c_addr, ELSM9DS1OutputDataRa
     result = i2c_lsm9ds1_init(i2c_device, i2c_addr);
     if (result)
     {
-        result = lsm9ds1_wakeup();
+        result = lsm9ds1_config();
     }
     if (result)
     {
-        result = lsm9ds1_setODR(odr);
+        result = lsm9ds1_setODR(odr); //also trigges wake up from power down
     }    
     return result;
 }
