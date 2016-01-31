@@ -47,12 +47,13 @@
 /** LSM9DS1 register addresses
  *  Accelerometer, temperature, and gyro readings are each 16bit signed integers
  *  stored in two consecutive registeres as 2's complement value
- * The by order can be selected by CTRL_REG8
+ *  The byte order can be selected by CTRL_REG8
  *  By default, the registers LSM9DS1_REG_OUT_TEMP ... LSM9DS1_REG_ACCEL_ZOUT
  *  each contain the low byte of the 16 bit. The high byte is in the next register
  *  --> byte order is different from MPU6050.
- *  Favourably, the accelerometer, temperature, and gyro registers ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
- *  are clustered in a fashion that is optimized for block reads
+ *  Favourably, the accelerometer, and gyro registers
+ *  are clustered in a fashion that is optimized for block reads - see datasheet section 3.3.
+ *  The temperature register must be read separately.
  */
 
 #define LSM9DS1_REG_OUT_TEMP        0x15    //int16_t - 12bit resolution
@@ -61,7 +62,7 @@
 #define LSM9DS1_REG_OUT_Z_G         0x1C    //int16_t
 #define LSM9DS1_REG_OUT_X_XL        0x28    //int16_t
 #define LSM9DS1_REG_OUT_Y_XL        0x2A    //int16_t
-#define LSM9DS1_REG_OUT_Z_XL        0x2C    /int16_t
+#define LSM9DS1_REG_OUT_Z_XL        0x2C    //int16_t
 
 #define LSM9DS1_REG_CTRL_REG1_G     0x10
 #define LSM9DS1_REG_ORIENT_CFG_G    0x13
@@ -71,7 +72,7 @@
  /** LSM9DS1 register values
   */
 #define LSM9DS1_CTRL_REG8__BOOT     0x80
-#define LSM9DS1_WHO_AM_I            0x68 //MPU6050 used same value 0x68
+#define LSM9DS1_WHO_AM_I            0x68    //MPU6050 used same value 0x68
 
  /** LSM9DS1 conversion factors
   * Accelerometer scale at default +-2g range: 16384 LSB/g
@@ -170,65 +171,6 @@ static bool i2c_read_uint8(uint8_t reg, uint8_t* data)
     return result;
 }
 
-
-/** Read a 16 bit signed integer from two consecutive registers
- */
-static bool i2c_read_int16(uint8_t reg, int16_t* data)
-{
-    bool result = false;
-    __s32 i2c_result;
-    char buf[10];
-
-    if (_i2c_fd < 0)
-    {
-        /* Invalid file descriptor */
-    }
-    else
-    {
-        /* Using SMBus commands */
-        i2c_result = i2c_smbus_read_word_data(_i2c_fd, reg);
-        if (i2c_result < 0)
-        {
-            /* ERROR HANDLING: i2c transaction failed */
-        }
-        else
-        {
-            /* i2c_result contains the read word */
-            //swap bytes as i2c_smbus_read_word_data() expects low by first!
-            uint16_t tmp = ( ((i2c_result&0xFF)<<8) | ((i2c_result&0xFF00)>>8));
-            *data = (int16_t) tmp;
-            //printf("Register 0x%02X: %08X = %d\n", reg, i2c_result, *data);
-            result = true;
-        }
-    }
-    return result;
-}
-
-/** Read a block of 8 bit unsigned integers from two consecutive registers
- */
-static bool i2c_read_block_1(uint8_t reg, uint8_t* data, uint8_t size)
-{
-    bool result = false;
-
-    if (_i2c_fd < 0)
-    {
-        /* Invalid file descriptor */
-    }
-    else
-    {
-        if (write(_i2c_fd, &reg, 1) == 1)
-        {
-            int8_t count = 0;
-            count = read(_i2c_fd, data, size);
-            if (count == size)
-            {
-                result = true;
-            }
-        }
-    }
-    return result;
-}
-
 /** Read a block of 8 bit unsigned integers from two consecutive registers
  *  Variant using 1 single ioctl() call instead of 1 read() followed by 1 write()
  *  See https://www.kernel.org/doc/Documentation/i2c/dev-interface
@@ -238,7 +180,7 @@ static bool i2c_read_block_1(uint8_t reg, uint8_t* data, uint8_t size)
  *    [i2c_msg] (http://lxr.free-electrons.com/source/include/uapi/linux/i2c.h#L68)
  * Seems to be marginally faster than i2c_read_block_1(): Ca 1% when reading 8 bytes
  */
-static bool i2c_read_block_2(uint8_t reg, uint8_t* data, uint8_t size)
+static bool i2c_read_block(uint8_t reg, uint8_t* data, uint8_t size)
 {
     bool result = false;
     struct i2c_rdwr_ioctl_data i2c_data;
@@ -278,10 +220,6 @@ static bool i2c_read_block_2(uint8_t reg, uint8_t* data, uint8_t size)
     return result;
 }
 
-static bool i2c_read_block(uint8_t reg, uint8_t* data, uint8_t size)
-{
-    return i2c_read_block_2(reg, data, size);
-}
 
 static bool i2c_lsm9ds1_init(const char* i2c_device, uint8_t i2c_addr)
 {
@@ -498,24 +436,31 @@ bool lsm9ds1_read_accel_gyro(TLSM9DS1Vector3D* acceleration, TLSM9DS1Vector3D* g
     bool result = true;
     int16_t value;
     struct timespec time_value;
-    uint8_t block[14];
+    uint8_t block[14]; //6 bytes: gyro, 6 bytes: accel, 2 bytes: temperature
 
-    //always read temperature
-    uint8_t start_reg = MPU6050_REG_TEMP_OUT;
-    uint16_t num_bytes = 2;
+    //Although gyro and accelerometer registers are not consecutive,
+    //they can apparently be read in a single block
+    //See datasheet, section 3.3
+    //"When both accelerometer and gyroscope sensors are activated at the same ODR, starting
+    //from OUT_X_G (18h - 19h) multiple reads can be performed. Once OUT_Z_XL (2Ch - 2Dh)
+    //is read, the system automatically restarts from OUT_X_G (18h - 19h) (see Figure 7)."
+    
+    uint8_t start_reg = 0;
+    uint16_t num_bytes = 0;
     uint8_t start = 6;
 
     //read acceleration?
     if (acceleration)
     {
-        start_reg = MPU6050_REG_ACCEL_XOUT;
+        start_reg = LSM9DS1_REG_OUT_X_XL;
         num_bytes +=6;
-        start = 0;
     }
     //read gyro_angular_rate?
     if (gyro_angular_rate)
     {
+        start_reg = LSM9DS1_REG_OUT_X_G;
         num_bytes +=6;
+        start = 0;        
     }
 
     if (timestamp != NULL)
@@ -523,29 +468,37 @@ bool lsm9ds1_read_accel_gyro(TLSM9DS1Vector3D* acceleration, TLSM9DS1Vector3D* g
         *timestamp = lsm9ds1_get_timestamp();
     }
 
-    if (i2c_read_block(start_reg, block+start, num_bytes))
+    if (temperature)
     {
+        if (i2c_read_block(LSM9DS1_REG_OUT_TEMP, block+12, 2))
+        {
+            value = (((int16_t)block[13]) << 8) | block[12];
+            *temperature = conv_temp(value);
+        }
+        else
+        {
+            result = false;
+        }
+    }
+
+    if (start_reg && i2c_read_block(start_reg, block+start, num_bytes))
+    {    
         if (acceleration)
         {
-            value = (((int16_t)block[0]) << 8) | block[1];
+            value = (((int16_t)block[7]) << 8) | block[6];
             acceleration->x = conv_accel(value);
-            value = (((int16_t)block[2]) << 8) | block[3];
+            value = (((int16_t)block[9]) << 8) | block[8];
             acceleration->y = conv_accel(value);
-            value = (((int16_t)block[4]) << 8) | block[5];
+            value = (((int16_t)block[11]) << 8) | block[10];
             acceleration->z = conv_accel(value);
-        }
-        if (temperature)
-        {
-            value = (((int16_t)block[6]) << 8) | block[7];
-            *temperature = conv_temp(value);
         }
         if (gyro_angular_rate)
         {
-            value = (((int16_t)block[8]) << 8) | block[9];
+            value = (((int16_t)block[1]) << 8) | block[0];
             gyro_angular_rate->x = conv_gyro(value);
-            value = (((int16_t)block[10]) << 8) | block[11];
+            value = (((int16_t)block[3]) << 8) | block[2];
             gyro_angular_rate->y = conv_gyro(value);
-            value = (((int16_t)block[12]) << 8) | block[13];
+            value = (((int16_t)block[5]) << 8) | block[4];
             gyro_angular_rate->z = conv_gyro(value);
         }
     }

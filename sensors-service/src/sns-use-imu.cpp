@@ -88,7 +88,7 @@ static void mpu6050_cb(const TMPU6050Vector3D acceleration[], const TMPU6050Vect
     
 }
 
-static void lsm9ds1_cb(const TMPU6050Vector3D acceleration[], const TMPU6050Vector3D gyro_angular_rate[], const float temperature[], const uint64_t timestamp[], const uint16_t num_elements)
+static void lsm9ds1_cb(const TLSM9DS1Vector3D acceleration[], const TLSM9DS1Vector3D gyro_angular_rate[], const float temperature[], const uint64_t timestamp[], const uint16_t num_elements)
 {
     TAccelerationData accel[IMU_NUM_SAMPLES] = {0};
     TGyroscopeData gyro[IMU_NUM_SAMPLES] = {0};
@@ -96,9 +96,9 @@ static void lsm9ds1_cb(const TMPU6050Vector3D acceleration[], const TMPU6050Vect
     for (uint16_t i=0; i<num_elements; i++)
     {
         accel[i].timestamp = timestamp[i];
-        accel[i].x = acceleration[i].x*MPU6050_UNIT_1_G;
-        accel[i].y = acceleration[i].y*MPU6050_UNIT_1_G;
-        accel[i].z = acceleration[i].z*MPU6050_UNIT_1_G;
+        accel[i].x = acceleration[i].x*LSM9DS1_UNIT_1_G;
+        accel[i].y = acceleration[i].y*LSM9DS1_UNIT_1_G;
+        accel[i].z = acceleration[i].z*LSM9DS1_UNIT_1_G;
         accel[i].temperature = temperature[i];
         accel[i].validityBits = ACCELERATION_X_VALID | ACCELERATION_Y_VALID |
                                 ACCELERATION_Z_VALID | ACCELERATION_TEMPERATURE_VALID;
@@ -115,6 +115,41 @@ static void lsm9ds1_cb(const TMPU6050Vector3D acceleration[], const TMPU6050Vect
     updateAccelerationData(accel, num_elements);
     updateGyroscopeData(gyro, num_elements);
     
+}
+
+static bool snsGyroscopeInit_MPU6050()
+{
+    //DLPF cut-off 42Hz fits best to 100Hz sample rate
+    bool is_ok = mpu6050_init(IMU_I2C_DEV, MPU6050_ADDR_1, MPU6050_DLPF_42HZ);
+    is_ok = is_ok && mpu6050_register_callback(&mpu6050_cb);
+    is_ok = is_ok && mpu6050_start_reader_thread(IMU_SAMPLE_INTERVAL, IMU_NUM_SAMPLES, IMU_AVG_SAMPLES);
+    return is_ok;
+}
+
+static bool snsGyroscopeDestroy_MPU6050()
+{
+    bool is_ok = mpu6050_stop_reader_thread();
+    is_ok = is_ok && mpu6050_deregister_callback(&mpu6050_cb);
+    is_ok = is_ok && mpu6050_deinit();    
+    return is_ok;
+}
+
+
+static bool snsGyroscopeInit_LSM9DS1()
+{
+    //ODR 119Hz with LPF1 cut-off 38Hz fits best to 100Hz sample rate
+    bool is_ok = lsm9ds1_init(IMU_I2C_DEV, LSM9DS1_ADDR_1, LSM9DS1_ODR_119HZ);
+    is_ok = is_ok && lsm9ds1_register_callback(&lsm9ds1_cb);
+    is_ok = is_ok && lsm9ds1_start_reader_thread(IMU_SAMPLE_INTERVAL, IMU_NUM_SAMPLES, IMU_AVG_SAMPLES);
+    return is_ok;
+}
+
+static bool snsGyroscopeDestroy_LSM9DS1()
+{
+    bool is_ok = lsm9ds1_stop_reader_thread();
+    is_ok = is_ok && lsm9ds1_deregister_callback(&lsm9ds1_cb);
+    is_ok = is_ok && lsm9ds1_deinit();
+    return is_ok;
 }
 
 bool snsInit()
@@ -157,33 +192,9 @@ bool snsGyroscopeInit()
     {
         is_ok = iGyroscopeInit();
 #if defined(IMU_TYPE_MPU6050)
-        if (is_ok)
-        {
-            //DLPF cut-off 42Hz fits best to 100Hz sample rate
-            is_ok = mpu6050_init(IMU_I2C_DEV, MPU6050_ADDR_1, MPU6050_DLPF_42HZ);
-        }
-        if (is_ok)
-        {    
-            is_ok = mpu6050_register_callback(&mpu6050_cb);
-        }        
-        if (is_ok)
-        {
-            is_ok = mpu6050_start_reader_thread(IMU_SAMPLE_INTERVAL, IMU_NUM_SAMPLES, IMU_AVG_SAMPLES);
-        }
+        is_ok = is_ok &&  snsGyroscopeInit_MPU6050();
 #elif defined(IMU_TYPE_LSM9DS1)
-        if (is_ok)
-        {
-            //ODR 119Hz with LPF1 cut-off 38Hz fits best to 100Hz sample rate
-            is_ok = lsm9ds1_init(IMU_I2C_DEV, LSM9DS1_ADDR_1, LSM9DS1_ODR_119HZ);
-        }
-        if (is_ok)
-        {    
-            is_ok = lsm9ds1_register_callback(&lsm9ds1_cb);
-        }        
-        if (is_ok)
-        {
-            is_ok = lsm9ds1_start_reader_thread(IMU_SAMPLE_INTERVAL, IMU_NUM_SAMPLES, IMU_AVG_SAMPLES);
-        }
+        is_ok = is_ok && = snsGyroscopeInit_LSM9DS1();
 #else
         is_ok = false;
 #endif        
@@ -202,13 +213,10 @@ bool snsGyroscopeDestroy()
     else
     {
         is_initialized = false;
-        bool is_ok = mpu6050_stop_reader_thread();
-#if defined(IMU_TYPE_MPU6050)        
-        is_ok = is_ok && mpu6050_deregister_callback(&mpu6050_cb);
-        is_ok = is_ok && mpu6050_deinit();
+#if defined(IMU_TYPE_MPU6050)
+        is_ok = is_ok && snsGyroscopeDestroy_MPU6050();
 #elif defined(IMU_TYPE_LSM9DS1)
-        is_ok = is_ok && lsm9ds1_deregister_callback(&lsm9ds1_cb);
-        is_ok = is_ok && lsm9ds1_deinit();
+        is_ok = is_ok && snsGyroscopeDestroy_LSM9DS1();        
 #endif        
         is_ok = is_ok && iGyroscopeDestroy();
     }
