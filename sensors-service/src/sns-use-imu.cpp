@@ -6,8 +6,8 @@
 * \ingroup SensorsService
 * \author Helmut Schmidt <https://github.com/huirad>
 *
-* \copyright Copyright (C) 2015, Helmut Schmidt 
-* 
+* \copyright Copyright (C) 2015, Helmut Schmidt
+*
 * \license
 * This Source Code Form is subject to the terms of the
 * Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with
@@ -63,7 +63,7 @@ static void mpu6050_cb(const TMPU6050Vector3D acceleration[], const TMPU6050Vect
 {
     TAccelerationData accel[IMU_NUM_SAMPLES] = {0};
     TGyroscopeData gyro[IMU_NUM_SAMPLES] = {0};
-    
+
     for (uint16_t i=0; i<num_elements; i++)
     {
         accel[i].timestamp = timestamp[i];
@@ -81,18 +81,18 @@ static void mpu6050_cb(const TMPU6050Vector3D acceleration[], const TMPU6050Vect
         gyro[i].temperature = temperature[i];
         gyro[i].validityBits = GYROSCOPE_YAWRATE_VALID | GYROSCOPE_PITCHRATE_VALID |
                                GYROSCOPE_ROLLRATE_VALID | GYROSCOPE_TEMPERATURE_VALID;
-                             
+
     }
     updateAccelerationData(accel, num_elements);
     updateGyroscopeData(gyro, num_elements);
-    
+
 }
 
 static void lsm9ds1_cb(const TLSM9DS1Vector3D acceleration[], const TLSM9DS1Vector3D gyro_angular_rate[], const float temperature[], const uint64_t timestamp[], const uint16_t num_elements)
 {
     TAccelerationData accel[IMU_NUM_SAMPLES] = {0};
     TGyroscopeData gyro[IMU_NUM_SAMPLES] = {0};
-    
+
     for (uint16_t i=0; i<num_elements; i++)
     {
         accel[i].timestamp = timestamp[i];
@@ -110,11 +110,11 @@ static void lsm9ds1_cb(const TLSM9DS1Vector3D acceleration[], const TLSM9DS1Vect
         gyro[i].temperature = temperature[i];
         gyro[i].validityBits = GYROSCOPE_YAWRATE_VALID | GYROSCOPE_PITCHRATE_VALID |
                                GYROSCOPE_ROLLRATE_VALID | GYROSCOPE_TEMPERATURE_VALID;
-                             
+
     }
     updateAccelerationData(accel, num_elements);
     updateGyroscopeData(gyro, num_elements);
-    
+
 }
 
 static bool snsGyroscopeInit_MPU6050()
@@ -130,7 +130,7 @@ static bool snsGyroscopeDestroy_MPU6050()
 {
     bool is_ok = mpu6050_stop_reader_thread();
     is_ok = is_ok && mpu6050_deregister_callback(&mpu6050_cb);
-    is_ok = is_ok && mpu6050_deinit();    
+    is_ok = is_ok && mpu6050_deinit();
     return is_ok;
 }
 
@@ -192,12 +192,12 @@ bool snsGyroscopeInit()
     {
         is_ok = iGyroscopeInit();
 #if defined(IMU_TYPE_MPU6050)
-        is_ok = is_ok &&  snsGyroscopeInit_MPU6050();
+        is_ok = is_ok && snsGyroscopeInit_MPU6050();
 #elif defined(IMU_TYPE_LSM9DS1)
-        is_ok = is_ok && = snsGyroscopeInit_LSM9DS1();
+        is_ok = is_ok && snsGyroscopeInit_LSM9DS1();
 #else
         is_ok = false;
-#endif        
+#endif
         is_initialized = is_ok;
     }
     return is_ok;
@@ -216,11 +216,11 @@ bool snsGyroscopeDestroy()
 #if defined(IMU_TYPE_MPU6050)
         is_ok = is_ok && snsGyroscopeDestroy_MPU6050();
 #elif defined(IMU_TYPE_LSM9DS1)
-        is_ok = is_ok && snsGyroscopeDestroy_LSM9DS1();        
-#endif        
+        is_ok = is_ok && snsGyroscopeDestroy_LSM9DS1();
+#endif
         is_ok = is_ok && iGyroscopeDestroy();
     }
-    return is_ok;    
+    return is_ok;
 }
 
 bool snsAccelerationInit()
