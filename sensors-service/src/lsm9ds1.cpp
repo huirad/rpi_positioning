@@ -1,16 +1,16 @@
 /**************************************************************************
- * @brief Access library for LSM9DS1 inertial sensor 
+ * @brief Access library for LSM9DS1 inertial sensor
  *
  * @details Encapsulate I2C access to a LSM9DS1 sensor on a Linux machine
  * The LSM9DS1 from ST Microelectronics is a 6DOF inertial sensor
- * @see http://www.st.com/web/en/catalog/sense_power/FM89/SC1448/PF259998 
+ * @see http://www.st.com/web/en/catalog/sense_power/FM89/SC1448/PF259998
  * Derived from mpu6050.cpp by cloning and then adapting.
- * Duplication of several helper functions is purpose to obtain 
+ * Duplication of several helper functions is purpose to obtain
  * self contained code with minimum dependencies.
  *
  * @author Helmut Schmidt <https://github.com/huirad>
  * @copyright Copyright (C) 2016, Helmut Schmidt
- * 
+ *
  * @license MPL-2.0 <http://spdx.org/licenses/MPL-2.0>
  *
  **************************************************************************/
@@ -78,12 +78,13 @@
   * Accelerometer scale at default +-2g range: 16384 LSB/g
   *    data sheet: 0.061 mg/LSB
   * Temperature in degrees C = (TEMP_OUT Register Value as a signed quantity)/16
-  *    data sheet: 16 LSB/°C
+  *    data sheet: 16 LSB/°C, Output is 0 at 25°C
   * Gyroscope scale at default +-245 deg/s range: 114 LSB/(deg/s)
   *    data sheet: 8.75 mdps/LSB
   */
 #define LSM9DS1_ACCEL_SCALE  16384.0
 #define LSM9DS1_TEMP_SCALE   16.0
+#define LSM9DS1_TEMP_BIAS    25.0
 #define LSM9DS1_GYRO_SCALE   114.3
 
 
@@ -296,7 +297,7 @@ static float conv_accel(int16_t raw_accel)
 
 static float conv_temp(int16_t raw_temp)
 {
-    return raw_temp / LSM9DS1_TEMP_SCALE;
+    return raw_temp / LSM9DS1_TEMP_SCALE + LSM9DS1_TEMP_BIAS;
 }
 
 static float conv_gyro(int16_t raw_gyro)
@@ -419,7 +420,7 @@ bool lsm9ds1_init(const char* i2c_device, uint8_t i2c_addr, ELSM9DS1OutputDataRa
     if (result)
     {
         result = lsm9ds1_setODR(odr); //also trigges wake up from power down
-    }    
+    }
     return result;
 }
 
@@ -444,7 +445,7 @@ bool lsm9ds1_read_accel_gyro(TLSM9DS1Vector3D* acceleration, TLSM9DS1Vector3D* g
     //"When both accelerometer and gyroscope sensors are activated at the same ODR, starting
     //from OUT_X_G (18h - 19h) multiple reads can be performed. Once OUT_Z_XL (2Ch - 2Dh)
     //is read, the system automatically restarts from OUT_X_G (18h - 19h) (see Figure 7)."
-    
+
     uint8_t start_reg = 0;
     uint16_t num_bytes = 0;
     uint8_t start = 6;
@@ -460,7 +461,7 @@ bool lsm9ds1_read_accel_gyro(TLSM9DS1Vector3D* acceleration, TLSM9DS1Vector3D* g
     {
         start_reg = LSM9DS1_REG_OUT_X_G;
         num_bytes +=6;
-        start = 0;        
+        start = 0;
     }
 
     if (timestamp != NULL)
@@ -482,7 +483,7 @@ bool lsm9ds1_read_accel_gyro(TLSM9DS1Vector3D* acceleration, TLSM9DS1Vector3D* g
     }
 
     if (start_reg && i2c_read_block(start_reg, block+start, num_bytes))
-    {    
+    {
         if (acceleration)
         {
             value = (((int16_t)block[7]) << 8) | block[6];
