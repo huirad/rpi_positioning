@@ -178,5 +178,6 @@ sensor data is activated (port=5555).
 
 DWITH_IMU=ON requires that the header file for I2C access 
 (i2c-dev.h) is available on your system. 
-This header file is typically part of the i2c-tools package.
+This header file is typically part of the libi2c-dev package.
+If you do not find it there, try the i2c-tools package.
 
