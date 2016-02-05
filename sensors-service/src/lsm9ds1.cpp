@@ -79,12 +79,14 @@
   *    data sheet: 0.061 mg/LSB
   * Temperature in degrees C = (TEMP_OUT Register Value as a signed quantity)/16
   *    data sheet: 16 LSB/°C, Output is 0 at 25°C
+  *    own calibration measurement : Temperature 2.5°C too low
+  *    ==> correct temperature bias to 27.5
   * Gyroscope scale at default +-245 deg/s range: 114 LSB/(deg/s)
   *    data sheet: 8.75 mdps/LSB
   */
 #define LSM9DS1_ACCEL_SCALE  16384.0
 #define LSM9DS1_TEMP_SCALE   16.0
-#define LSM9DS1_TEMP_BIAS    25.0
+#define LSM9DS1_TEMP_BIAS    27.5
 #define LSM9DS1_GYRO_SCALE   114.3
 
 
