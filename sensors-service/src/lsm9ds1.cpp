@@ -81,6 +81,7 @@
   *    data sheet: 16 LSB/°C, Output is 0 at 25°C
   *    own calibration measurement : Temperature 2.5°C too low
   *    ==> correct temperature bias to 27.5
+  *    See also https://github.com/kriswiner/LSM9DS1/issues/3
   * Gyroscope scale at default +-245 deg/s range: 114 LSB/(deg/s)
   *    data sheet: 8.75 mdps/LSB
   */

@@ -34,8 +34,8 @@ option(WITH_REPLAYER
 option(WITH_IPHONE
     "Use IPHONE as source of sensors data" OFF)
 
-option(WITH_IMU
-    "Use a 6DOF IMU further specified by -DIMU_TYPE as source of gyro/acceleration data" OFF)
+option(WITH_SENSORS
+    "Use real sensors connected to the target device" OFF)
 
 option(WITH_TESTS
     "Compile test applications" OFF)

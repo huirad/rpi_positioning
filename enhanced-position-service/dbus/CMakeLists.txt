@@ -58,8 +58,8 @@ set(sensors-service_LIBRARY_DIRS "${PROJECT_BINARY_DIR}/../../sensors-service/sr
 
 if(WITH_IPHONE)
     set(sensors-service_LIBRARIES "sensors-service-use-iphone")
-elseif(WITH_IMU)
-    set(sensors-service_LIBRARIES "sensors-service-use-imu")
+elseif(WITH_SENSORS)
+    set(sensors-service_LIBRARIES "sensors-service-use-sensors")
 elseif(WITH_REPLAYER)
     set(sensors-service_LIBRARIES "sensors-service-use-replayer")
 else()

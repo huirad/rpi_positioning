@@ -32,8 +32,8 @@ find_package(PkgConfig)
 
 if(WITH_IPHONE)
     set(LIBRARIES sensors-service-use-iphone)
-elseif(WITH_IMU)
-    set(LIBRARIES sensors-service-use-imu)
+elseif(WITH_SENSORS)
+    set(LIBRARIES sensors-service-use-sensors)
     #for glibc <2.17, clock_gettime is in librt: http://linux.die.net/man/2/clo$
     #TODO: is there a nice way to detect glibc version in CMake?
     set(LIBRARIES ${LIBRARIES} rt)

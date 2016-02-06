@@ -23,7 +23,7 @@ message(STATUS "LIB-SENSORS-SERVICE")
 message(STATUS "WITH_DLT = ${WITH_DLT}")
 message(STATUS "WITH_IPHONE = ${WITH_IPHONE}")
 message(STATUS "WITH_REPLAYER = ${WITH_REPLAYER}")
-message(STATUS "WITH_IMU = ${WITH_IMU}")
+message(STATUS "WITH_SENSORS = ${WITH_SENSORS}")
 message(STATUS "WITH_TESTS = ${WITH_TESTS}")
 message(STATUS "WITH_DEBUG = ${WITH_DEBUG}")
 
@@ -57,15 +57,16 @@ if(WITH_IPHONE)
     add_library(sensors-service-use-iphone SHARED ${LIB_SRC_USE_IPHONE})
     target_link_libraries(sensors-service-use-iphone ${LIBRARIES})
     install(TARGETS sensors-service-use-iphone DESTINATION lib)
-elseif(WITH_IMU)
-    #generate library using replayer as input
+elseif(WITH_SENSORS)
+    #generate library using real sensors as input
     if(IMU_TYPE)
+        #supported IMU types: MPU6050, LSM9DS1, ...
         add_definitions(-DIMU_TYPE_${IMU_TYPE})
     elseif(IMU_TYPE)
         add_definitions(-DIMU_TYPE_MPU6050)
     endif(IMU_TYPE)
-    #supported IMU types: MPU6050, LSM9DS1, BNO055
-    set(LIB_SRC_USE_IMU ${CMAKE_CURRENT_SOURCE_DIR}/sns-use-imu.cpp
+    set(LIB_SRC_USE_SENSORS ${CMAKE_CURRENT_SOURCE_DIR}/sns-use-sensors.cpp
+             ${CMAKE_CURRENT_SOURCE_DIR}/i2ccomm.cpp
              ${CMAKE_CURRENT_SOURCE_DIR}/mpu6050.cpp
              ${CMAKE_CURRENT_SOURCE_DIR}/lsm9ds1.cpp
              ${CMAKE_CURRENT_SOURCE_DIR}/gyroscope.c
@@ -74,9 +75,9 @@ elseif(WITH_IMU)
              ${CMAKE_CURRENT_SOURCE_DIR}/vehicle-speed.c
              ${CMAKE_CURRENT_SOURCE_DIR}/wheeltick.c
              ${CMAKE_CURRENT_SOURCE_DIR}/sns-meta-data.c)
-    add_library(sensors-service-use-imu SHARED ${LIB_SRC_USE_IMU})
-    target_link_libraries(sensors-service-use-imu ${LIBRARIES})
-    install(TARGETS sensors-service-use-imu DESTINATION lib)
+    add_library(sensors-service-use-sensors SHARED ${LIB_SRC_USE_SENSORS})
+    target_link_libraries(sensors-service-use-sensors ${LIBRARIES})
+    install(TARGETS sensors-service-use-sensors DESTINATION lib)
     #for glibc <2.17, clock_gettime is in librt: http://linux.die.net/man/2/clo$
     #TODO: is there a nice way to detect glibc version in CMake?
     set(LIBRARIES ${LIBRARIES} rt)
