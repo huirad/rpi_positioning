@@ -65,6 +65,18 @@ elseif(WITH_SENSORS)
     elseif(IMU_TYPE)
         add_definitions(-DIMU_TYPE_MPU6050)
     endif(IMU_TYPE)
+    #TODO: move FindI2CDEV stuff to a separate file?
+    find_file(I2CDEV_H
+        i2c-dev.h
+        PATHS
+            /usr/include/linux/
+    )
+    if (I2CDEV_H)
+        message(STATUS "I2CDEV found: ${I2CDEV_H}")
+    else (I2CDEV_H)
+        message(STATUS "I2CDEV not found")
+        add_definitions(-DI2C_NOT_AVAILABLE)
+    endif (I2CDEV_H)
     set(LIB_SRC_USE_SENSORS ${CMAKE_CURRENT_SOURCE_DIR}/sns-use-sensors.cpp
              ${CMAKE_CURRENT_SOURCE_DIR}/i2ccomm.cpp
              ${CMAKE_CURRENT_SOURCE_DIR}/mpu6050.cpp
