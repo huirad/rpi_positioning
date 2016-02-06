@@ -28,12 +28,10 @@
 #include <fcntl.h>
 
 
-
-/** Write a 8 bit unsigned integer to a register
- */
 bool i2ccomm::write_uint8(uint8_t reg, uint8_t data)
 {
     bool result = false;
+#ifndef I2C_NOT_AVAILABLE
     __s32 i2c_result;
 
     if (_i2c_fd < 0)
@@ -52,14 +50,14 @@ bool i2ccomm::write_uint8(uint8_t reg, uint8_t data)
         result = true;
         }
     }
+#endif
     return result;
 }
 
-/** Read a 8 bit unsigned integer from a register
- */
 bool i2ccomm::read_uint8(uint8_t reg, uint8_t* data)
 {
     bool result = false;
+#ifndef I2C_NOT_AVAILABLE
     __s32 i2c_result;
 
     if (_i2c_fd < 0)
@@ -81,6 +79,7 @@ bool i2ccomm::read_uint8(uint8_t reg, uint8_t* data)
             result = true;
         }
     }
+#endif
     return result;
 }
 
@@ -91,11 +90,12 @@ bool i2ccomm::read_uint8(uint8_t reg, uint8_t* data)
  *  See also
  *    [i2c_rdwr_ioctl_data] (http://lxr.free-electrons.com/source/include/uapi/linux/i2c-dev.h#L64)
  *    [i2c_msg] (http://lxr.free-electrons.com/source/include/uapi/linux/i2c.h#L68)
- * Seems to be marginally faster than i2c_read_block_1(): Ca 1% when reading 8 bytes
+ * Seems to be marginally faster than  read() followed by 1 write(): Ca 1% when reading 8 bytes
  */
 bool i2ccomm::read_block(uint8_t reg, uint8_t* data, uint8_t size)
 {
     bool result = false;
+#ifndef I2C_NOT_AVAILABLE
     struct i2c_rdwr_ioctl_data i2c_data;
     struct i2c_msg msg[2];
     int i2c_result;
@@ -130,37 +130,40 @@ bool i2ccomm::read_block(uint8_t reg, uint8_t* data, uint8_t size)
             result = true;
         }
     }
+#endif
     return result;
 }
 
 
 bool i2ccomm::init(const char* i2c_device, uint8_t i2c_addr)
 {
-    bool result = true;
+    bool result = false;
+#ifndef I2C_NOT_AVAILABLE
     _i2c_fd = open(i2c_device, O_RDWR);
     if (_i2c_fd < 0)
     {
         /* ERROR HANDLING; you can check errno to see what went wrong */
-        result = false;
     }
     else
     {
         if (ioctl(_i2c_fd, I2C_SLAVE, i2c_addr) < 0)
         {
             /* ERROR HANDLING; you can check errno to see what went wrong */
-            result = false;
         }
         else
         {
             _i2c_addr = i2c_addr;
+            result = true;
         }
     }
+#endif
     return result;
 }
 
 bool i2ccomm::deinit()
 {
     bool result = false;
+#ifndef I2C_NOT_AVAILABLE
     if (_i2c_fd < 0)
     {
         /* Invalid file descriptor */
@@ -172,6 +175,7 @@ bool i2ccomm::deinit()
         _i2c_addr = 0;
         result = true;
     }
+#endif
     return result;
 }
 
