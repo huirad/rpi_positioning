@@ -1,12 +1,9 @@
 /**************************************************************************
  * @brief Access library for I2C
  *
- * @details Encapsulate I2C access to a LSM9DS1 sensor on a Linux machine
- * The LSM9DS1 from ST Microelectronics is a 6DOF inertial sensor
- * @see http://www.st.com/web/en/catalog/sense_power/FM89/SC1448/PF259998
- * Derived from mpu6050.cpp by cloning and then adapting.
- * Duplication of several helper functions is purpose to obtain
- * self contained code with minimum dependencies.
+ * @details Encapsulate Linux I2C access via the user space device driver
+ * @see https://www.kernel.org/doc/Documentation/i2c/dev-interface
+ * @see https://www.kernel.org/doc/Documentation/i2c/smbus-protocol
  *
  * @author Helmut Schmidt <https://github.com/huirad>
  * @copyright Copyright (C) 2016, Helmut Schmidt
@@ -27,37 +24,14 @@
 #include <linux/i2c-dev.h> //RPi: located in /usr/include/linux/i2c-dev.h - all functions inline
 
 //standard c library functions
-#include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <time.h>
-#include <pthread.h>
 
-
-/** ===================================================================
- * 3.) PRIVATE VARIABLES AND FUNCTIONS
- * Functions starting with i2c_ encapsulate the I2C bus access
- * See
- *   https://www.kernel.org/doc/Documentation/i2c/dev-interface
- *   https://www.kernel.org/doc/Documentation/i2c/smbus-protocol
- * Functions starting with conv_ convert the raw data to common measurement units
- */
-
-/** Global file descriptor - must be initialized by calling i2c_lsm9ds1_init()
- */
-static int _i2c_fd = -1;
-/** Global device address - must be initialized by calling i2c_lsm9ds1_init()
- */
-static uint8_t _i2c_addr = 0;
 
 
 /** Write a 8 bit unsigned integer to a register
  */
-static bool i2c_write_uint8(uint8_t reg, uint8_t data)
+bool i2ccomm::write_uint8(uint8_t reg, uint8_t data)
 {
     bool result = false;
     __s32 i2c_result;
@@ -83,7 +57,7 @@ static bool i2c_write_uint8(uint8_t reg, uint8_t data)
 
 /** Read a 8 bit unsigned integer from a register
  */
-static bool i2c_read_uint8(uint8_t reg, uint8_t* data)
+bool i2ccomm::read_uint8(uint8_t reg, uint8_t* data)
 {
     bool result = false;
     __s32 i2c_result;
@@ -119,7 +93,7 @@ static bool i2c_read_uint8(uint8_t reg, uint8_t* data)
  *    [i2c_msg] (http://lxr.free-electrons.com/source/include/uapi/linux/i2c.h#L68)
  * Seems to be marginally faster than i2c_read_block_1(): Ca 1% when reading 8 bytes
  */
-static bool i2c_read_block(uint8_t reg, uint8_t* data, uint8_t size)
+bool i2ccomm::read_block(uint8_t reg, uint8_t* data, uint8_t size)
 {
     bool result = false;
     struct i2c_rdwr_ioctl_data i2c_data;
@@ -160,7 +134,7 @@ static bool i2c_read_block(uint8_t reg, uint8_t* data, uint8_t size)
 }
 
 
-static bool i2c_lsm9ds1_init(const char* i2c_device, uint8_t i2c_addr)
+bool i2ccomm::init(const char* i2c_device, uint8_t i2c_addr)
 {
     bool result = true;
     _i2c_fd = open(i2c_device, O_RDWR);
@@ -184,7 +158,7 @@ static bool i2c_lsm9ds1_init(const char* i2c_device, uint8_t i2c_addr)
     return result;
 }
 
-static bool i2c_lsm9ds1_deinit()
+bool i2ccomm::deinit()
 {
     bool result = false;
     if (_i2c_fd < 0)
