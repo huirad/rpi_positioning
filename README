@@ -62,11 +62,13 @@ To build with tests and reading GPS NMEA data from a GPS receiver attached to /d
 cmake -DWITH_NMEA=ON -DWITH_TESTS=ON -DWITH_DEBUG=ON -DGNSS_DEVICE=\"/dev/ttyACM0\" -DGNSS_BAUDRATE=B38400 ../
 make
 
-To build with tests and with the logger  but without the EnhancedPositionService:
-and reading GPS NMEA data from a GPS receiver attached to /dev/ttyACM0 at 38400 baud
-with a u-blox chipset and 50ms transmission delay
-and with MPU6050 as source for gyro and accelerometer data
-cmake -DWITH_ENHANCED_POSITION_SERVICE=OFF -DWITH_NMEA=ON -DWITH_SENSORS=ON -DIMU_TYPE=MPU6050 -DWITH_LOGGER=ON -DWITH_TESTS=ON -DWITH_DEBUG=ON -DGNSS_DEVICE=\"/dev/ttyACM0\" -DGNSS_BAUDRATE=B38400 -DGNSS_CHIPSET=UBLOX -DGNSS_DELAY=50 ../
+To build
+- with tests
+- with the logger
+- without the EnhancedPositionService:
+- using as GNSS source a GPS receiver with a u-blox chipset and 50ms transmission delay providing NMEA data to /dev/ttyACM0 at 38400 baud
+- using as source for gyro and accelerometer data a LSM9DS1 sensor attached via I2C (e.g. from a Sense Hat module)
+cmake -DWITH_ENHANCED_POSITION_SERVICE=OFF -DWITH_NMEA=ON -DWITH_SENSORS=ON -DIMU_TYPE=LSM9DS1 -DWITH_LOGGER=ON -DWITH_TESTS=ON -DWITH_DEBUG=ON -DGNSS_DEVICE=\"/dev/ttyACM0\" -DGNSS_BAUDRATE=B38400 -DGNSS_CHIPSET=UBLOX -DGNSS_DELAY=50 ../
 make
 
 ===============================

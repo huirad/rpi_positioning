@@ -39,9 +39,9 @@ public:
     i2ccomm(): _i2c_fd (-1), _i2c_addr(0) {};
 
     /**
-     * Initialize the I2C connection
-     * @param i2c_device the name of the (linux) i2c device , e.g. "/dev/i2c-0"
-     * @param i2c_addr the I2C address (7bit) of the sensor
+     * Initialize a connection to an I2C slave
+     * @param i2c_device device name of the I2C bus to which the I2C slave is attached, e.g. "/dev/i2c-0"
+     * @param i2c_addr the I2C address (7bit) of the I2C slave
      * @return true on success
      */
     bool init(const char* i2c_device, uint8_t i2c_addr);

@@ -332,12 +332,16 @@ bool lsm9ds1_read_accel_gyro(TLSM9DS1Vector3D* acceleration, TLSM9DS1Vector3D* g
 
     if (start_reg && _i2ccomm.read_block(start_reg, block+start, num_bytes))
     {
+        /* GENIVI specifies, that x,y,z axes form a right-handed coordinate system.
+         * The LSM9DS1 x,y,z axes form a left-handed coordinate system.
+         * Therefore the y-axis values are inverted
+         */
         if (acceleration)
         {
             value = (((int16_t)block[7]) << 8) | block[6];
             acceleration->x = conv_accel(value);
             value = (((int16_t)block[9]) << 8) | block[8];
-            acceleration->y = conv_accel(value);
+            acceleration->y = -conv_accel(value);
             value = (((int16_t)block[11]) << 8) | block[10];
             acceleration->z = conv_accel(value);
         }
@@ -346,7 +350,7 @@ bool lsm9ds1_read_accel_gyro(TLSM9DS1Vector3D* acceleration, TLSM9DS1Vector3D* g
             value = (((int16_t)block[1]) << 8) | block[0];
             gyro_angular_rate->x = conv_gyro(value);
             value = (((int16_t)block[3]) << 8) | block[2];
-            gyro_angular_rate->y = conv_gyro(value);
+            gyro_angular_rate->y = -conv_gyro(value);
             value = (((int16_t)block[5]) << 8) | block[4];
             gyro_angular_rate->z = conv_gyro(value);
         }
