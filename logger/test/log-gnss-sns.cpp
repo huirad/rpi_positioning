@@ -56,7 +56,7 @@ class DBuf {
 #define DBUF_NUM_LINES 512
 
     struct SBuf {
-    public:      
+    public:
         char strings [DBUF_STRING_SIZE] [DBUF_NUM_LINES];
         uint16_t rnext;
         uint16_t wnext;
@@ -68,7 +68,7 @@ class DBuf {
     pthread_mutex_t wmutex;
     pthread_mutex_t rmutex;
 public:
-    
+
     DBuf()
     {
         pthread_mutex_init(&wmutex, NULL);
@@ -95,7 +95,7 @@ public:
         pthread_mutex_unlock(&wmutex);
         return retval;
     }
-    
+
     /**
      * Read next string from the buffer
      * Return NULL, if no more string available
@@ -112,11 +112,11 @@ public:
         pthread_mutex_unlock(&rmutex);
         return ret;
     }
-    
+
     /**
-     * Swap read and write buffers. 
+     * Swap read and write buffers.
      * Clears read buffer before to ensure that new write buffer is empty.
-     * Shall only be called by reader thread when read buffer has been 
+     * Shall only be called by reader thread when read buffer has been
      * completely processed.
      */
     void swap()
@@ -130,9 +130,9 @@ public:
         wbuf = rbuf;
         rbuf = tmp;
         pthread_mutex_unlock(&wmutex);
-        pthread_mutex_unlock(&rmutex);        
+        pthread_mutex_unlock(&rmutex);
     }
-    
+
 };
 
 
@@ -173,7 +173,7 @@ void dbufCb(const char* string)
 
 /**
  * Background thread to write double buffer to a file.
- * 
+ *
  */
 void* loop_log_writer(void*)
 {
@@ -237,11 +237,11 @@ static bool registerSigHandlers()
     action.sa_sigaction = &sigHandler;
     action.sa_flags = SA_SIGINFO;
 
-    if (sigaction(SIGINT, &action, NULL) < 0) 
+    if (sigaction(SIGINT, &action, NULL) < 0)
     {
         is_success = false;
     }
-    if (sigaction(SIGTERM, &action, NULL) < 0) 
+    if (sigaction(SIGTERM, &action, NULL) < 0)
     {
         is_success = false;
     }
@@ -298,19 +298,19 @@ pthread_t g_udpthread;
 void* loop_udp_log(void*)
 {
     struct sockaddr_in si_me, si_other;
-    int s; 
+    int s;
     socklen_t slen = sizeof(si_other);
     ssize_t recv_len;
     char buf[UDP_BUFLEN];
     char log_string[UDP_LOGLEN];
     bool ok = true;
-    
+
     //create a UDP socket
     if ((s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     {
         ok = false;
     }
-   
+
     if (ok)
     {
         // zero out the structure
@@ -318,14 +318,14 @@ void* loop_udp_log(void*)
         si_me.sin_family = AF_INET;
         si_me.sin_port = htons(UDP_PORT);
         si_me.sin_addr.s_addr = htonl(INADDR_ANY);
-    
+
         //bind socket to port
         if( bind(s , (struct sockaddr*)&si_me, sizeof(si_me) ) == -1)
         {
             ok = false;
         }
     }
-    
+
     //keep listening for data
     while(ok)
     {
@@ -337,9 +337,9 @@ void* loop_udp_log(void*)
         else
         {
             buf[recv_len]=0;
-            snprintf(log_string, UDP_LOGLEN-1, "%"PRIu64",0,$UDP,%s,%d,%s", 
+            snprintf(log_string, UDP_LOGLEN-1, "%"PRIu64",0,$UDP,%s,%d,%s",
                 snslogGetTimestamp(),
-                inet_ntoa(si_other.sin_addr), 
+                inet_ntoa(si_other.sin_addr),
                 ntohs(si_other.sin_port),
                 buf
             );
@@ -360,22 +360,22 @@ int main (int argc, char *argv[])
     int minor;
     int micro;
     char version_string[64];
-    
+
     bool is_poslog_init_ok = false;
     bool is_sns_init_ok = false;    
     bool is_sns_gyro_init_ok = false;
     bool is_sns_accel_init_ok = false;
     bool is_gnss_init_ok = false;
     int gnss_init_tries = 0;
-    
+
     registerSigHandlers();
-    
+
 #if (DLT_ENABLED)
     DLT_REGISTER_APP("GLT","GNSS/SNS Logger");
 #endif
     poslogSetFD(STDOUT_FILENO);
     is_poslog_init_ok = poslogInit();
-    
+
     if (is_poslog_init_ok)
     {
 
@@ -398,9 +398,9 @@ int main (int argc, char *argv[])
         sprintf(version_string, "0,0$GVSNSVER,%d,%d,%d", major, minor, micro);
         poslogAddString(version_string);
 
-#ifdef UDP_LOG        
-        pthread_create(&g_udpthread, NULL, loop_udp_log, NULL);        
-#endif        
+#ifdef UDP_LOG
+        pthread_create(&g_udpthread, NULL, loop_udp_log, NULL);
+#endif
         is_sns_init_ok = snsInit();
         if (is_sns_init_ok)
         {
@@ -456,7 +456,7 @@ int main (int argc, char *argv[])
         }
         
         //if not interrupted by SIGTERM then we have time to cleanup
-        if (!g_sigterm) 
+        if (!g_sigterm)
         {
             if (g_exit == eExitSigInt)
             {
@@ -492,7 +492,7 @@ int main (int argc, char *argv[])
         {
             pthread_join(g_logthread, NULL);
             fclose(g_logfile);
-            printf("#Write Failures: %"PRIu64"\n", g_write_failures);
+            printf("#Write Failures: %"PRIu32"\n", g_write_failures);
         }
         poslogDestroy();
     }

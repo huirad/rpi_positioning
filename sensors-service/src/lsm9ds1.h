@@ -133,7 +133,7 @@ typedef void (*LSM9DS1Callback)(const TLSM9DS1Vector3D acceleration[], const TLS
  * Register LSM9DS1 callback.
  * This is the recommended method for continuously accessing the LSM9DS1 data
  * The callback will be invoked when new LSM9DS1 data is available and the reader thread is running.
- * To start the reader thred, call mpu6050_start_reader_thread().
+ * To start the reader thread, call lsm9ds1_start_reader_thread().
  * @param callback The callback which should be registered.
  * @return True if callback has been registered successfully.
  */
@@ -149,7 +149,7 @@ bool lsm9ds1_deregister_callback(LSM9DS1Callback callback);
 
 /**
  * Start the LSM9DS1 reader thread.
- * This thread will call the callback function registered by mpu6050_register_callback()
+ * This thread will call the callback function registered by lsm9ds1_register_callback()
  * The thread may be started before of after registering the callback function
  * @param sample_interval Interval in ms (milliseconds) at which LSM9DS1 data shall be read
  * @param num_samples Number of samples to read for one call of the callback function
@@ -186,7 +186,7 @@ bool lsm9ds1_stop_reader_thread();
 #define LSM9DS1_PI M_PI
 #endif
 #define LSM9DS1_UNIT_1_G 9.80665
-#define LSM9DS1_UNIT_1_RAD_IN_DEG (180.0/MPU6050_PI)
+#define LSM9DS1_UNIT_1_RAD_IN_DEG (180.0/LSM9DS1_PI)
 
 /**
  * Get system timestamp
