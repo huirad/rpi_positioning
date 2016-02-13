@@ -38,7 +38,8 @@
 //Some more details on this mess:
 //The i2c-dev.h comes originally from lm-sensors.org, the home of i2c-tools
 //Since a while they have fixed the problem that i2c-dev.h is overwritten
-//See http://www.lm-sensors.org/changeset/6054/
+//See https://web.archive.org/web/20150319191005/http://lm-sensors.org/wiki/I2CTools_4_Plan
+//See also http://www.lm-sensors.org/changeset/6054/
 //where the i2c_smbus_ function are moved to a new header file /us/include/i2c/smbus.h
 //Unfortunately
 //a) http://www.lm-sensors.org is down since late 2015
