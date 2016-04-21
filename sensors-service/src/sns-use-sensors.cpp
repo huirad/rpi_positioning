@@ -46,15 +46,15 @@ DLT_DECLARE_CONTEXT(gContext);
 
 //sample interval (ms)
 #ifndef IMU_SAMPLE_INTERVAL
-#define IMU_SAMPLE_INTERVAL 10
+#define IMU_SAMPLE_INTERVAL 4
 #endif
 //number of samples per callback
 #ifndef IMU_NUM_SAMPLES
-#define IMU_NUM_SAMPLES 10
+#define IMU_NUM_SAMPLES 25
 #endif
 //control whether samples are averaged for the callback
 #ifndef IMU_AVG_SAMPLES
-#define IMU_AVG_SAMPLES true
+#define IMU_AVG_SAMPLES false
 #endif
 
 static volatile bool is_initialized = false;
@@ -138,7 +138,8 @@ static bool snsGyroscopeDestroy_MPU6050()
 static bool snsGyroscopeInit_LSM9DS1()
 {
     //ODR 119Hz with LPF1 cut-off 38Hz fits best to 100Hz sample rate
-    bool is_ok = lsm9ds1_init(IMU_I2C_DEV, LSM9DS1_ADDR_1, LSM9DS1_ODR_119HZ);
+    //Experimenta: 476Hz with cut-off 100Hz for 250Hz sample rate
+    bool is_ok = lsm9ds1_init(IMU_I2C_DEV, LSM9DS1_ADDR_1, LSM9DS1_ODR_476HZ);
     is_ok = is_ok && lsm9ds1_register_callback(&lsm9ds1_cb);
     is_ok = is_ok && lsm9ds1_start_reader_thread(IMU_SAMPLE_INTERVAL, IMU_NUM_SAMPLES, IMU_AVG_SAMPLES);
     return is_ok;
