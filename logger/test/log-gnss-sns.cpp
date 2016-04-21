@@ -53,7 +53,7 @@
 class DBuf {
 
 #define DBUF_STRING_SIZE 256
-#define DBUF_NUM_LINES 512
+#define DBUF_NUM_LINES 5120
 
     struct SBuf {
     public:
