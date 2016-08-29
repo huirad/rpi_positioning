@@ -24,8 +24,8 @@ extern "C" {
  * It is a or'ed bitmask of the EBarometerValidityBits values.
  */
 typedef enum {
-    Barometer_PRESSURE_VALID       = 0x00000001,   /**< Validity bit for field TBarometerData::pressure. */
-    Barometer_TEMPERATURE_VALID    = 0x00000002    /**< Validity bit for field TBarometerData::pressure. */
+    BAROMETER_PRESSURE_VALID       = 0x00000001,   /**< Validity bit for field TBarometerData::pressure. */
+    BAROMETER_TEMPERATURE_VALID    = 0x00000002    /**< Validity bit for field TBarometerData::pressure. */
 } EBarometerValidityBits;
 
 /**

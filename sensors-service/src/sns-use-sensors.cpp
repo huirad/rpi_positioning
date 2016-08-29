@@ -127,7 +127,7 @@ void lps25h_cb(const float pressure[], const float temperature[], const uint64_t
         baro[i].timestamp = timestamp[i];
         baro[i].pressure = pressure[i];
         baro[i].temperature = temperature[i];
-        baro[i].validityBits = Barometer_PRESSURE_VALID | Barometer_TEMPERATURE_VALID;
+        baro[i].validityBits = BAROMETER_PRESSURE_VALID | BAROMETER_TEMPERATURE_VALID;
     }
     updateBarometerData(baro, num_elements);
 }
@@ -169,7 +169,7 @@ static bool snsGyroscopeDestroy_LSM9DS1()
 
 static bool snsBarometerInit_LPS25H()
 {
-    //ODR 119Hz with LPF1 cut-off 38Hz fits best to 100Hz sample rate
+    //ODR 25Hz fits best to 25Hz sample rate
     bool is_ok = lps25h_init(IMU_I2C_DEV, LPS25H_ADDR_1, LPS25H_ODR_25HZ, LPS25H_AVG_0);
     is_ok = is_ok && lps25h_register_callback(&lps25h_cb);
     is_ok = is_ok && lps25h_start_reader_thread(40, 1, false);
