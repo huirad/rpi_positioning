@@ -59,6 +59,7 @@ DLT_DECLARE_CONTEXT(gContext);
 #endif
 
 static volatile bool is_initialized = false;
+static volatile bool is_baro_initialized  = false;
 
 static void mpu6050_cb(const TMPU6050Vector3D acceleration[], const TMPU6050Vector3D gyro_angular_rate[], const float temperature[], const uint64_t timestamp[], const uint16_t num_elements)
 {
@@ -272,7 +273,7 @@ bool snsAccelerationDestroy()
 bool snsBarometerInit()
 {
     bool is_ok = false;
-    if (is_initialized)
+    if (is_baro_initialized)
     {
         is_ok = true;
     }
@@ -284,7 +285,7 @@ bool snsBarometerInit()
 #else
         is_ok = false;
 #endif
-        is_initialized = is_ok;
+        is_baro_initialized = is_ok;
     }
     return is_ok;
 }
@@ -292,13 +293,13 @@ bool snsBarometerInit()
 bool snsBarometerDestroy()
 {
     bool is_ok = false;
-    if (!is_initialized)
+    if (!is_baro_initialized)
     {
         is_ok = true;
     }
     else
     {
-        is_initialized = false;
+        is_baro_initialized = false;
 #if defined(BARO_TYPE_LPS25H)
         is_ok = is_ok && snsBarometerDestroy_LPS25H();
 #endif
