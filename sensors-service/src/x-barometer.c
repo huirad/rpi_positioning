@@ -47,7 +47,7 @@ bool iBarometerDestroy()
 bool snsBarometerGetBarometerData(TBarometerData* barometerData)
 {
     bool retval = false;
-    if(gyroData)
+    if(barometerData)
     {
         pthread_mutex_lock(&mutexData);
         *barometerData = gBarometerData;
