@@ -176,7 +176,7 @@ static bool snsBarometerInit_LPS25H()
     return is_ok;
 }
 
-static bool snsBarometerInit_LPS25H()
+static bool snsBarometerDestroy_LPS25H()
 {
     bool is_ok = lps25h_stop_reader_thread();
     is_ok = is_ok && lps25h_deregister_callback(&lps25h_cb);
