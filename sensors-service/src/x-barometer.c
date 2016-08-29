@@ -119,7 +119,7 @@ void updateBarometerData(const TBarometerData barometerData[], uint16_t numEleme
     }
 }
 
-bool snsGyroscopeGetStatus(TSensorStatus* status)
+bool snsBarometerGetStatus(TSensorStatus* status)
 {
     bool retval = false;
     if(status)
