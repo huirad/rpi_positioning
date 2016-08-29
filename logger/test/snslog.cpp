@@ -123,7 +123,7 @@ void barometerDataToString(uint64_t timestamp, uint16_t countdown, const TBarome
         snprintf(
         str,
         size-1, //ensure that there is space for null-terminator
-        "%"PRIu64",%"PRIu16",$EXSNSBAR,%"PRIu64",%7.3f,%5.1f,0X%08X",
+        "%"PRIu64",%"PRIu16",$EXSNSBAR,%"PRIu64",%8.3f,%5.1f,0X%08X",
         timestamp,
         countdown,
         barometerData->timestamp,
