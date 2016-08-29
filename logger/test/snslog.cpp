@@ -135,7 +135,7 @@ void barometerDataToString(uint64_t timestamp, uint16_t countdown, const TBarome
     }
 }
 
-void gbarometerDataLog(uint64_t timestamp, const TBarometerData barometerData[], uint16_t numElements)
+void barometerDataLog(uint64_t timestamp, const TBarometerData barometerData[], uint16_t numElements)
 {
     char logstring[LOG_STRING_SIZE] ;
     for (int i=0; i<numElements; i++)
