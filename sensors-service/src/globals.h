@@ -30,6 +30,8 @@
 #include "vehicle-speed.h"
 #include "sns-meta-data.h"
 
+#include "x-barometer.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -46,7 +48,6 @@ bool iGyroscopeDestroy();
 void updateGyroscopeData(const TGyroscopeData gyroData[], uint16_t numElements);
 void updateGyroscopeStatus(const TSensorStatus* status);
 
-
 bool iWheelInit();
 bool iWheelDestroy();
 void updateWheelData(const TWheelData wheelData[], uint16_t numElements);
@@ -59,6 +60,11 @@ void updateVehicleSpeedStatus(const TSensorStatus* status);
 
 bool iVehicleDataInit();
 bool iVehicleDataDestroy();
+
+bool iBarometerInit();
+bool iBarometerDestroy();
+void updateBarometerData(const TBarometerData barometerData[], uint16_t numElements);
+void updateBarometerStatus(const TSensorStatus* status);
 
 #ifdef __cplusplus
 }

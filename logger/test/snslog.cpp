@@ -115,3 +115,35 @@ void gyroscopeDataLog(uint64_t timestamp, const TGyroscopeData gyroData[], uint1
         poslogAddString(logstring, seq);
     }
 }
+
+void barometerDataToString(uint64_t timestamp, uint16_t countdown, const TBarometerData* barometerData, char *str, size_t size)
+{
+    if ((str) && (size > 0))
+    {
+        snprintf(
+        str,
+        size-1, //ensure that there is space for null-terminator
+        "%"PRIu64",%"PRIu16",$EXSNSBAR,%"PRIu64",%7.3f,%5.1f,0X%08X",
+        timestamp,
+        countdown,
+        barometerData->timestamp,
+        barometerData->pressure,
+        barometerData->temperature,
+        barometerData->validityBits
+        );
+        str[size-1] = 0; //ensure that string is null-terminated
+    }
+}
+
+void gbarometerDataLog(uint64_t timestamp, const TBarometerData barometerData[], uint16_t numElements)
+{
+    char logstring[LOG_STRING_SIZE] ;
+    for (int i=0; i<numElements; i++)
+    {
+        TPoslogSeq seq = POSLOG_SEQ_CONT;
+        if (i==0) seq|=POSLOG_SEQ_START;
+        if (i==(numElements-1)) seq|=POSLOG_SEQ_STOP;
+        barometerDataToString(timestamp, numElements-i-1, &barometerData[i], logstring, LOG_STRING_SIZE);
+        poslogAddString(logstring, seq);
+    }
+}

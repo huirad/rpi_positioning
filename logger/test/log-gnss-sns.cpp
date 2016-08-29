@@ -42,6 +42,9 @@
 #include "gnss.h"
 #include "gnss-status.h"
 #include "sns-init.h"
+#include "acceleration.h"
+#include "gyroscope.h"
+#include "x-barometer.h"
 
 
 
@@ -284,6 +287,11 @@ static void cbGyro(const TGyroscopeData gyroData[], uint16_t numElements)
     gyroscopeDataLog(snslogGetTimestamp(), gyroData, numElements);
 }
 
+static void cbBarometer(const TBarometerData barometerData[], uint16_t numElements)
+{
+    barometerDataLog(snslogGetTimestamp(), barometerData, numElements);
+}
+
 #define UDP_LOG
 #ifdef UDP_LOG
 #include<stdlib.h> //exit(0);
@@ -365,6 +373,7 @@ int main (int argc, char *argv[])
     bool is_sns_init_ok = false;
     bool is_sns_gyro_init_ok = false;
     bool is_sns_accel_init_ok = false;
+    bool is_sns_baro_init_ok = false;
     bool is_gnss_init_ok = false;
     int gnss_init_tries = 0;
 
@@ -416,6 +425,12 @@ int main (int argc, char *argv[])
                 poslogAddString("#INF snsAccelerationInit() success");
                 snsAccelerationRegisterCallback(&cbAccel);
             }
+            is_sns_baro_init_ok = snsBarometerInit();
+            if(is_sns_baro_init_ok)
+            {
+                poslogAddString("#INF snsBarometerInit() success");
+                snsBarometerRegisterCallback(&cbBarometer);
+            }            
             if (!is_sns_gyro_init_ok && !is_sns_accel_init_ok)
             {
                 is_sns_init_ok = false;
@@ -468,6 +483,11 @@ int main (int argc, char *argv[])
             }
             if (is_sns_init_ok)
             {
+                if (is_sns_baro_init_ok)
+                {
+                    snsBarometerDeregisterCallback(&cbBarometer);
+                    snsBarometerDestroy();
+                }            
                 if (is_sns_accel_init_ok)
                 {
                     snsAccelerationDeregisterCallback(&cbAccel);

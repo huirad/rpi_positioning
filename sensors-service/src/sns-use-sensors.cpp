@@ -33,6 +33,7 @@
 #include "log.h"
 #include "mpu6050.h"
 #include "lsm9ds1.h"
+#include "lps25h.h"
 
 DLT_DECLARE_CONTEXT(gContext);
 
@@ -46,7 +47,7 @@ DLT_DECLARE_CONTEXT(gContext);
 
 //sample interval (ms)
 #ifndef IMU_SAMPLE_INTERVAL
-#define IMU_SAMPLE_INTERVAL 10
+#define IMU_SAMPLE_INTERVAL 4
 #endif
 //number of samples per callback
 #ifndef IMU_NUM_SAMPLES
@@ -117,6 +118,20 @@ static void lsm9ds1_cb(const TLSM9DS1Vector3D acceleration[], const TLSM9DS1Vect
 
 }
 
+void lps25h_cb(const float pressure[], const float temperature[], const uint64_t timestamp[], const uint16_t num_elements)
+{
+    TBarometerData baro[IMU_NUM_SAMPLES] = {0};
+
+    for (uint16_t i=0; i<num_elements; i++)
+    {
+        baro[i].timestamp = timestamp[i];
+        baro[i].pressure = pressure[i];
+        baro[i].temperature = temperature[i];
+        baro[i].validityBits = Barometer_PRESSURE_VALID | Barometer_TEMPERATURE_VALID;
+    }
+    updateBarometerData(baro, num_elements);
+}
+
 static bool snsGyroscopeInit_MPU6050()
 {
     //DLPF cut-off 42Hz fits best to 100Hz sample rate
@@ -149,6 +164,23 @@ static bool snsGyroscopeDestroy_LSM9DS1()
     bool is_ok = lsm9ds1_stop_reader_thread();
     is_ok = is_ok && lsm9ds1_deregister_callback(&lsm9ds1_cb);
     is_ok = is_ok && lsm9ds1_deinit();
+    return is_ok;
+}
+
+static bool snsBarometerInit_LPS25H()
+{
+    //ODR 119Hz with LPF1 cut-off 38Hz fits best to 100Hz sample rate
+    bool is_ok = lps25h_init(IMU_I2C_DEV, LPS25H_ADDR_1, LPS25H_ODR_25HZ, LPS25H_AVG_0);
+    is_ok = is_ok && lps25h_register_callback(&lps25h_cb);
+    is_ok = is_ok && lps25h_start_reader_thread(40, 1, false);
+    return is_ok;
+}
+
+static bool snsBarometerInit_LPS25H()
+{
+    bool is_ok = lps25h_stop_reader_thread();
+    is_ok = is_ok && lps25h_deregister_callback(&lps25h_cb);
+    is_ok = is_ok && lps25h_deinit();
     return is_ok;
 }
 
@@ -233,6 +265,46 @@ bool snsAccelerationDestroy()
 {
     //gyro is the master for mpu6050 - nothing further to deeinit
     return snsGyroscopeDestroy();
+}
+
+#define BARO_TYPE_LPS25H
+
+bool snsBarometerInit()
+{
+    bool is_ok = false;
+    if (is_initialized)
+    {
+        is_ok = true;
+    }
+    else
+    {
+        is_ok = iBarometerInit();
+#if defined(BARO_TYPE_LPS25H)
+        is_ok = is_ok && snsBarometerInit_LPS25H();
+#else
+        is_ok = false;
+#endif
+        is_initialized = is_ok;
+    }
+    return is_ok;
+}
+
+bool snsBarometerDestroy()
+{
+    bool is_ok = false;
+    if (!is_initialized)
+    {
+        is_ok = true;
+    }
+    else
+    {
+        is_initialized = false;
+#if defined(BARO_TYPE_LPS25H)
+        is_ok = is_ok && snsBarometerDestroy_LPS25H();
+#endif
+        is_ok = is_ok && iBarometerDestroy();
+    }
+    return is_ok;
 }
 
 //+ some dummy implementations

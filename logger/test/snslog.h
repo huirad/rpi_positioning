@@ -24,6 +24,7 @@
 #include "poslog.h"
 #include "acceleration.h"
 #include "gyroscope.h"
+#include "x-barometer.h"
 #include <string.h>
 
 #ifdef __cplusplus
@@ -64,7 +65,7 @@ void accelerationDataLog(uint64_t timestamp, const TAccelerationData acceleratio
  * @param timestamp Timestamp for the current time in ms to be added to the header of the log string.
  *   This timestamp shall be based on the same time source as the timestamp within the gyroData parameter.
  * @param countdown Countdown value to be added to the header of the log string.
- *   This is the number of following acceleration data in same sequence
+ *   This is the number of following gyroscope data in same sequence
  * @param gyroData TGyroscopeData structure to be converted to the log string
  * @param str Pointer to a string variable where the log string will be written to.
  * @param size Size of the string variable where the log string will be written to.
@@ -72,14 +73,35 @@ void accelerationDataLog(uint64_t timestamp, const TAccelerationData acceleratio
 void gyroscopeDataToString(uint64_t timestamp, uint16_t countdown, const TGyroscopeData* gyroData, char *str, size_t size);
 
 /**
- * Write acceleration data to the position log.
+ * Write gyroscope data to the position log.
  * 
- * @param timestamp Timestamp when the acceleration data have been received [ms]
+ * @param timestamp Timestamp when the gyroscope data have been received [ms]
  * @param gyroData Pointer to an array of TGyroscopeData with size numElements 
  * @param numElements Number of TGyroscopeData elements in array gyroData
  */
 void gyroscopeDataLog(uint64_t timestamp, const TGyroscopeData gyroData[], uint16_t numElements);
 
+/**
+ * Convert a TBarometerData structure to a log string.
+ * @note: The log string will *not* contain a line break (\n) at the end.
+ * @param timestamp Timestamp for the current time in ms to be added to the header of the log string.
+ *   This timestamp shall be based on the same time source as the timestamp within the barometerData parameter.
+ * @param countdown Countdown value to be added to the header of the log string.
+ *   This is the number of following barometer data in same sequence
+ * @param barometerData TBarometerData structure to be converted to the log string
+ * @param str Pointer to a string variable where the log string will be written to.
+ * @param size Size of the string variable where the log string will be written to.
+ */
+void barometerDataToString(uint64_t timestamp, uint16_t countdown, const TBarometerData* barometerData, char *str, size_t size);
+
+/**
+ * Write barometer data to the position log.
+ * 
+ * @param timestamp Timestamp when the barometer data have been received [ms]
+ * @param barometerData Pointer to an array of TBarometerData with size numElements 
+ * @param numElements Number of TBarometerData elements in array barometerData
+ */
+void barometerDataLog(uint64_t timestamp, const TBarometerData barometerData[], uint16_t numElements);
 
 #ifdef __cplusplus
 }

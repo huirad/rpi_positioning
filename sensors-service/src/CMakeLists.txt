@@ -52,6 +52,7 @@ if(WITH_IPHONE)
              ${CMAKE_CURRENT_SOURCE_DIR}/gyroscope.c
              ${CMAKE_CURRENT_SOURCE_DIR}/vehicle-data.c
              ${CMAKE_CURRENT_SOURCE_DIR}/vehicle-speed.c
+             ${CMAKE_CURRENT_SOURCE_DIR}/x-barometer.c             
              ${CMAKE_CURRENT_SOURCE_DIR}/sns-meta-data.c)
 
     add_library(sensors-service-use-iphone SHARED ${LIB_SRC_USE_IPHONE})
@@ -81,11 +82,13 @@ elseif(WITH_SENSORS)
              ${CMAKE_CURRENT_SOURCE_DIR}/i2ccomm.cpp
              ${CMAKE_CURRENT_SOURCE_DIR}/mpu6050.cpp
              ${CMAKE_CURRENT_SOURCE_DIR}/lsm9ds1.cpp
+             ${CMAKE_CURRENT_SOURCE_DIR}/lps25h.cpp
              ${CMAKE_CURRENT_SOURCE_DIR}/gyroscope.c
              ${CMAKE_CURRENT_SOURCE_DIR}/acceleration.c
              ${CMAKE_CURRENT_SOURCE_DIR}/vehicle-data.c
              ${CMAKE_CURRENT_SOURCE_DIR}/vehicle-speed.c
              ${CMAKE_CURRENT_SOURCE_DIR}/wheeltick.c
+             ${CMAKE_CURRENT_SOURCE_DIR}/x-barometer.c             
              ${CMAKE_CURRENT_SOURCE_DIR}/sns-meta-data.c)
     add_library(sensors-service-use-sensors SHARED ${LIB_SRC_USE_SENSORS})
     target_link_libraries(sensors-service-use-sensors ${LIBRARIES})
@@ -101,6 +104,7 @@ elseif(WITH_REPLAYER)
              ${CMAKE_CURRENT_SOURCE_DIR}/acceleration.c
              ${CMAKE_CURRENT_SOURCE_DIR}/vehicle-data.c
              ${CMAKE_CURRENT_SOURCE_DIR}/vehicle-speed.c
+             ${CMAKE_CURRENT_SOURCE_DIR}/x-barometer.c             
              ${CMAKE_CURRENT_SOURCE_DIR}/sns-meta-data.c)
 
     add_library(sensors-service-use-replayer SHARED ${LIB_SRC_USE_REPLAYER})
