@@ -252,9 +252,39 @@ class GVSNSGYR:
                 self.temperature = float(fields[7])
             self.valid = True
         return self.valid
+		
+#FORMAT timestamp,countdown,$EXSNSBAR,timestamp,pressure,temperature,validityBits
+class EXSNSBAR:
+    """Encapsulate a EXSNSBAR sentence.
+    
+    The attributes correspond to the fields in the corresponding
+    C data structure TBarometerData from header file x-barometer.h
+    Invalid data are set to None
+    """
 
-		
-		
+    BAROMETER_PRESSURE_VALID            = 0x00000001    #Validity bit for field TBarometerData::pressure.
+    BAROMETER_TEMPERATURE_VALID         = 0x00000002    #Validity bit for field TBarometerData::temperature.
+    
+    def __init__(self):
+        self.valid = False
+        self.timestamp = None
+        self.pressure = None
+        self.temperature = None
+        
+    def from_logstring(self, logstring):
+        self.__init__()
+        logstring = logstring.rstrip() #remove \r\n at end of string
+        fields = logstring.split(",")
+        if (len(fields) == 7) and (fields[2] == "$EXSNSBAR"):
+            #print(logstring)
+            self.timestamp = int(fields[3])
+            self.validity_bits = int(fields[6],16)
+            if self.validity_bits & EXSNSBAR.BAROMETER_PRESSURE_VALID:
+                self.pressure = float(fields[4])
+            if self.validity_bits & EXSNSBAR.BAROMETER_TEMPERATURE_VALID:
+                self.temperature = float(fields[5])
+            self.valid = True
+        return self.valid		
 		
 GPXHEADER = """<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="g4l2gpx"
@@ -284,6 +314,7 @@ with open (filename, "r", encoding='latin_1') as f:  #"r" is default, so it coul
     pos = GVGNSPOS()
     acc = GVSNSACC()
     gyr = GVSNSGYR()
+    bar = EXSNSBAR()
   
     for line in f:
         line = line.rstrip() #remove \r\n at end of string
@@ -297,6 +328,9 @@ with open (filename, "r", encoding='latin_1') as f:  #"r" is default, so it coul
         elif "$GVSNSGYR" in line:
             if gyr.from_logstring(line):
                 pass
+        elif "$EXSNSBAR" in line:
+            if bar.from_logstring(line):
+                pass                
         elif "$GVGNSTIM" in line:
             if tim.from_logstring(line):
                 pass
@@ -330,6 +364,8 @@ with open (filename, "r", encoding='latin_1') as f:  #"r" is default, so it coul
                         print('<g4g:P>{0}</g4g:P>'.format(gyr.pitchRate))
                     if gyr.rollRate:
                         print('<g4g:R>{0}</g4g:R>'.format(gyr.rollRate))
+                    if bar.pressure:
+                        print('<g4b:P>{0}</g4b:P>'.format(bar.pressure))                        
                     print('</extensions>')
                     print('</trkpt>')
         
