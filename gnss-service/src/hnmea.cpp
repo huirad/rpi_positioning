@@ -38,6 +38,8 @@ void HNMEA_Init_GNS_DATA(GNS_DATA* gns_data)
 {
     gns_data->valid         = 0;
     gns_data->valid_new     = 0;
+    gns_data->valid_ext     = 0;
+    gns_data->valid_ext_new = 0;    
     gns_data->lat           = 999.99;
     gns_data->lon           = 999.99;
     gns_data->alt           = -1000.0;
@@ -59,7 +61,8 @@ void HNMEA_Init_GNS_DATA(GNS_DATA* gns_data)
     gns_data->fix3d         = -1;
     gns_data->hacc          = 999.9;
     gns_data->vacc          = 999.9;
-    
+    gns_data->usat_gps      = -99;
+    gns_data->usat_glo      = -99;    
 }
 
 
@@ -124,6 +127,7 @@ void HNMEA_Parse_RMC(char* line, GNS_DATA* gns_data)
     int len = strlen(line);
 
     gns_data->valid_new = 0;
+    gns_data->valid_ext_new = 0;
 
     //outer loop - stop at line end
     while ( (l < len ) && (stop == 0) )
@@ -298,6 +302,7 @@ void HNMEA_Parse_RMC(char* line, GNS_DATA* gns_data)
 
     //update validity mask with new data
     gns_data->valid |= gns_data->valid_new;
+    gns_data->valid_ext |= gns_data->valid_ext_new;
 }
 
 void HNMEA_Parse_GGA(char* line, GNS_DATA* gns_data)
@@ -318,6 +323,7 @@ void HNMEA_Parse_GGA(char* line, GNS_DATA* gns_data)
     double geoid = 0.0;
 
     gns_data->valid_new = 0;
+    gns_data->valid_ext_new = 0;
 
     //outer loop - stop at line end
     while ( (l < len ) && (stop == 0) )
@@ -533,6 +539,7 @@ void HNMEA_Parse_GGA(char* line, GNS_DATA* gns_data)
 
     //update validity mask with valid_new data
     gns_data->valid |= gns_data->valid_new;
+    gns_data->valid_ext |= gns_data->valid_ext_new;
 
 }
 
@@ -547,8 +554,12 @@ void HNMEA_Parse_GSA(char* line, GNS_DATA* gns_data)
     int len = strlen(line);
 
     int usat = 0; //counter for used satellites
+    //NMEA 4.1: GSA has additional field systemId after VDOP
+    //1=GPS 2=GLONASS 3=Galileo 4=BeiDou 
+    int systemId = 0;
 
     gns_data->valid_new = 0;
+    gns_data->valid_ext_new = 0;
 
     //outer loop - stop at line end
     while ( (l < len ) && (stop == 0) )
@@ -650,9 +661,18 @@ void HNMEA_Parse_GSA(char* line, GNS_DATA* gns_data)
                     gns_data->vdop = atof(field);
                     gns_data->valid_new |= GNS_DATA_VDOP;
                 }
-                stop = 1; //ignore all other fields
                 break;
             }
+            case 18: //NMEA 4.1 systemId
+            {
+                //length check
+                if (strlen (field) >=1)
+                {
+                    systemId = atoi(field);
+                }
+                stop = 1; //ignore all other fields
+                break;
+            }            
             default:
             {
                 stop = 1;
@@ -679,12 +699,26 @@ void HNMEA_Parse_GSA(char* line, GNS_DATA* gns_data)
 
     if (usat > 0)
     {
-        gns_data->usat = usat;
-        gns_data->valid_new |= GNS_DATA_USAT;
+        if (systemId == 0) //unspecified
+        {
+            gns_data->usat = usat;
+            gns_data->valid_new |= GNS_DATA_USAT;
+        }
+        else if (systemId == 1) //GPS
+        {
+            gns_data->usat_gps = usat;
+            gns_data->valid_ext_new |= GNS_DATA_USAT_GPS;
+        }
+        else if (systemId == 2) //GLONASS
+        {
+            gns_data->usat_glo = usat;
+            gns_data->valid_ext_new |= GNS_DATA_USAT_GLO;
+        }
     }
 
     //update validity mask with new data
     gns_data->valid |= gns_data->valid_new;
+    gns_data->valid_ext |= gns_data->valid_ext_new;
 }
 
 void HNMEA_Parse_GST(char* line, GNS_DATA* gns_data)
@@ -704,6 +738,7 @@ void HNMEA_Parse_GST(char* line, GNS_DATA* gns_data)
     float alt_std = 0.0;
     
     gns_data->valid_new = 0;
+    gns_data->valid_ext_new = 0;
 
     //outer loop - stop at line end
     while ( (l < len ) && (stop == 0) )
@@ -822,6 +857,7 @@ void HNMEA_Parse_GST(char* line, GNS_DATA* gns_data)
 
     //update validity mask with new data
     gns_data->valid |= gns_data->valid_new;
+    gns_data->valid_ext |= gns_data->valid_ext_new;
 }
 
 

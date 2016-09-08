@@ -230,7 +230,15 @@ bool extractPosition(const GNS_DATA& gns_data, uint64_t timestamp, TGNSSPosition
     gnss_pos.validityBits |= GNSS_POSITION_ASYS_VALID;
     gnss_pos.usedSystems = GNSS_SYSTEM_GPS;
     gnss_pos.validityBits |= GNSS_POSITION_USYS_VALID;
-
+    //check whether GLONASS is active in addition to GPS
+    //TODO check explicitly for GPS to cover GLONASS only
+    if ( (gns_data.valid_ext & GNS_DATA_USAT_GLO) && (gns_data.usat_glo > 0) )
+    {
+        gnss_pos.activatedSystems |= GNSS_SYSTEM_GLONASS;
+        gnss_pos.usedSystems |= GNSS_SYSTEM_GLONASS;
+        gnss_pos.fixTypeBits |= GNSS_FIX_TYPE_MULTI_CONSTELLATION;
+    }
+    
     return true;
 }
 

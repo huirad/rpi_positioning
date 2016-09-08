@@ -36,7 +36,7 @@ typedef enum {
     NMEA_GST            //GxGST Sentence
 } NMEA_RESULT;
 
-//bitmap for GNSS data
+//bitmaps for GNSS data
 typedef enum {
     GNS_DATA_LAT    = 0x0001,  //latitude
     GNS_DATA_LON    = 0x0002,  //longitude
@@ -56,9 +56,16 @@ typedef enum {
     GNS_DATA_VACC   = 0x8000   //vertical accuracy
 } GNS_DATA_TYPE;
 
+typedef enum {
+    GNS_DATA_USAT_GPS   = 0x0001,  //number of used GPS satellites
+    GNS_DATA_USAT_GLO   = 0x0002   //number of used GLONASS satellites    
+} GNS_DATA_EXT_TYPE;    
+
 typedef struct {
     int valid;      //bitmask of GNS_DATA_TYPE for cumulative valid fields
     int valid_new;  //bitmask of GNS_DATA_TYPE for new valid fields
+    int valid_ext;  //bitmask of GNS_DATA_EXT_TYPE for cumulative valid fields
+    int valid_ext_new;  //bitmask of GNS_DATA_EXT_TYPE for new valid fields    
     double lat;     //latitude in degrees - negative values are south of equator
     double lon;     //longitude in degrees - negative values are west of Greenwich
     double alt;     //altitude in meter above sea level
@@ -80,6 +87,8 @@ typedef struct {
     int fix3d;      //GPS status: 3D Fix - fix2d will be set also 
     float hacc;     //horizontal accuracy in m
     float vacc;     //vertical accuracy in m
+    int usat_gps;   //number of GPS satellites
+    int usat_glo;   //number of GLONASS satellites    
 } GNS_DATA;
 
 void HNMEA_Init_GNS_DATA(GNS_DATA* gns_data);
