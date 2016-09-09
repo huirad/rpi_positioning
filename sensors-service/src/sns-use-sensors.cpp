@@ -47,11 +47,11 @@ DLT_DECLARE_CONTEXT(gContext);
 
 //sample interval (ms)
 #ifndef IMU_SAMPLE_INTERVAL
-#define IMU_SAMPLE_INTERVAL 4
+#define IMU_SAMPLE_INTERVAL 10
 #endif
 //number of samples per callback
 #ifndef IMU_NUM_SAMPLES
-#define IMU_NUM_SAMPLES 10
+#define IMU_NUM_SAMPLES 2
 #endif
 //control whether samples are averaged for the callback
 #ifndef IMU_AVG_SAMPLES
